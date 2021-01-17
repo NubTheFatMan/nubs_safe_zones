@@ -12,3 +12,7 @@ Safe Zone mod for Garry's Mod. This was developed a while ago, but I never actua
 # Server Console Commands and Variables
 * `nsz_prop_checks_per_tick <# props>` - How many props to check per server tick. Higher number = more lag, but faster detection
 * `nsz_aabb_v_sat_sensitivity <sensitivity>` - Range of 0 to 90. This is the angle which determines whether to use AABB (Axis Aligned Bounding Box) detection or SAT (Separating Axis Theorem) detection. 0 = always use SAT (slow but accurate), 90 = always use AABB (fast with false positives)
+# Bugs
+Please note that I'm not currently working on this mod anymore, so no plans on fixing these are coming any time soon.
+1. If two zones of the same type are next to each other, and you drag a prop through the line between them, the prop will flicker out and back into the zone.
+2. If all zones are removed, any entities in a zone will remain marked in the zones they were in until another zone is created.
