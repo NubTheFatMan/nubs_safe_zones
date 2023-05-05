@@ -10,9 +10,20 @@ Safe Zone mod for Garry's Mod. This was developed a while ago, but I never actua
 * `nsz_show_display (0|1)` - Shows or hides the "you are in zone" indicator.
 * `nsz_delete <zone ID>` - Deletes a zone by ID. SuperAdmin only be default, however has ULX permission support. You can get a zone ID by using the console command `nsz_show_zones`
 # Server Console Commands and Variables
-* `nsz_prop_checks_per_tick <# props>` - How many props to check per server tick. Higher number = more lag, but faster detection
-* `nsz_aabb_v_sat_sensitivity <sensitivity>` - Range of 0 to 90. This is the angle which determines whether to use AABB (Axis Aligned Bounding Box) detection or SAT (Separating Axis Theorem) detection. 0 = always use SAT (slow but accurate), 90 = always use AABB (fast with false positives)
+* `nsz_prop_checks_per_tick <# props>` - How many props to check per server tick. Higher number = more lag, but faster detection. Default is 50.
+* `nsz_aabb_v_sat_sensitivity <sensitivity>` - Range of 0 to 90. This is the angle which determines whether to use AABB (Axis Aligned Bounding Box) detection or SAT (Separating Axis Theorem) detection. 0 = always use SAT (slow but accurate), 90 = always use AABB (fast with false positives). Default is 10.
 # Bugs
 Please note that I'm not currently working on this mod anymore, so no plans on fixing these are coming any time soon.
 1. If two zones of the same type are next to each other, and you drag a prop through the line between them, the prop will flicker out and back into the zone.
 2. If all zones are removed, any entities in a zone will remain marked in the zones they were in until another zone is created.
+
+# Upcoming Changes
+I'm planning on revisiting this in the near future and making a few changes. Once these changes are made, I'll update it on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2553024572).
+* Address the bugs mentioned above.
+* Move from `Weapons > Other` to the toolbar to the right of the spawn menu.
+* Add an alternative method for getting a zone ID for instances where the player can't get to the center to see it.
+* In the `nsz:RegisterZone()` function, I want to add support for the first argument to just be a table with all the parameters in no particular order thanks to indexing.
+* Make `nsz:InZone()` function first check the cache, and add a boolean argument to force check.
+* Add a variable for no pvp zones that will allow a player back into a zone if they haven't died since they left.
+* Deprecate "EntityZoneEnter" and "EntityZoneLeave" hooks in favor of "NSZEnter" and "NSZLeave". The reason for this is that the current hook names don't really tell you what it's from, could cause conflicts. I will remove the old hooks a month or so after updating the workshop page.
+* Expand on `nsz_show_zones` debug GUI to give more information. Mainly how many props used AABB vs SAT detection.
