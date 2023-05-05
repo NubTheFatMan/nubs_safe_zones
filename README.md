@@ -27,3 +27,6 @@ I'm planning on revisiting this in the near future and making a few changes. Onc
 * Add a variable for no pvp zones that will allow a player back into a zone if they haven't died since they left.
 * Deprecate "EntityZoneEnter" and "EntityZoneLeave" hooks in favor of "NSZEnter" and "NSZLeave". The reason for this is that the current hook names don't really tell you what it's from, could cause conflicts. I will remove the old hooks a month or so after updating the workshop page.
 * Expand on `nsz_show_zones` debug GUI to give more information. Mainly how many props used AABB vs SAT detection.
+* Add language support.
+* Add a zone preview and even placing multiple zones before uploading to the server.
+* I'd like to figure out a way to optimize nearby/intersecting zones by merging them with the feature above. This may be cut.

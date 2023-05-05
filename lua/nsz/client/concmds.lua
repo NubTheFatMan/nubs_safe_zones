@@ -7,6 +7,7 @@ if not ConVarExists("nsz_show_display") then
 end
 
 concommand.Add("nsz_delete", function(ply, cmd, args, argStr)
+    -- I never trust the client. Just send to the server and let the server process the command :moyai:
     net.Start("nsz_delete")
         net.WriteString(argStr)
     net.SendToServer()

@@ -2,6 +2,10 @@
 util.AddNetworkString("nsz_delete")
 
 net.Receive("nsz_delete", function(len, ply)
+    if not IsValid(ply) then 
+        return MsgN("You must be on the server to run this command.")
+    end
+
     local str = net.ReadString()
     if ULib ~= nil then
         if not ULib.ucl.query(ply, "nsz_create_zones") then ply:ChatPrint("NSZ Error: You don't have permission to delete a zone.") return end
