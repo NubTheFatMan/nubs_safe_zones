@@ -31,3 +31,4 @@ I'm planning on revisiting this in the near future and making a few changes. Onc
 * Add a zone preview and even placing multiple zones before uploading to the server.
 * I'd like to figure out a way to optimize nearby/intersecting zones by merging them with the feature above. This may be cut.
 * I want to make the HUD showing which zones you are in customizable. Could be moved/docked to a separate part of the screen, background could be transparent and/or blurry, and even recolored.
+* For the steam workshop, figure out why the materials aren't sending to the client if the server isn't using this github repo.
