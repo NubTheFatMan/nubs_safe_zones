@@ -23,10 +23,11 @@ I'm planning on revisiting this in the near future and making a few changes. Onc
 * Move from `Weapons > Other` to the toolbar to the right of the spawn menu.
 * Add an alternative method for getting a zone ID for instances where the player can't get to the center to see it.
 * In the `nsz:RegisterZone()` function, I want to add support for the first argument to just be a table with all the parameters in no particular order thanks to indexing.
-* Make `nsz:InZone()` function first check the cache, and add a boolean argument to force check.
+* Make `nsz:InZone()` function check a cache, and add a boolean argument to force check.
 * Add a variable for no pvp zones that will allow a player back into a zone if they haven't died since they left.
 * Deprecate "EntityZoneEnter" and "EntityZoneLeave" hooks in favor of "NSZEnter" and "NSZLeave". The reason for this is that the current hook names don't really tell you what it's from, could cause conflicts. I will remove the old hooks a month or so after updating the workshop page.
 * Expand on `nsz_show_zones` debug GUI to give more information. Mainly how many props used AABB vs SAT detection.
 * Add language support.
 * Add a zone preview and even placing multiple zones before uploading to the server.
 * I'd like to figure out a way to optimize nearby/intersecting zones by merging them with the feature above. This may be cut.
+* I want to make the HUD showing which zones you are in customizable. Could be moved/docked to a separate part of the screen, background could be transparent and/or blurry, and even recolored.
