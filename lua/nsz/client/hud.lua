@@ -208,9 +208,10 @@ hook.Add("PostDrawOpaqueRenderables", "nsz_render_zones", function()
         end
     end
 
-    if not IsValid(LocalPlayer():GetActiveWeapon()) then return end
+    if not IsValid(LocalPlayer():GetActiveWeapon()) or not LocalPlayer():GetTool() then return end
     local class = LocalPlayer():GetActiveWeapon():GetClass()
-    if class == "zone_creator" and istable(nsz.currentZone) then
+    local tool = LocalPlayer():GetTool().Mode
+    if class == "gmod_tool" and tool == "zone_creator" and istable(nsz.currentZone) then
         local zone = table.Copy(nsz.currentZone)
         if not istable(zone.points) then return end
         if not isvector(zone.points[1]) then return end

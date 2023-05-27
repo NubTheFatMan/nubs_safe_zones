@@ -21,11 +21,11 @@ Please note that I'm not currently working on this mod anymore, so no plans on f
 # Completed Features
 These are features that were in Upcoming Changes listed below, however have been completed and moved to this list.
 * Client settings are now available. Mainly you can just change where the zone indicator appears on screen and what it looks like.
+* Moved from `Weapons > Other` to the toolbar to the right of the spawn menu. The weapon will still remain with a deprecation notice, will be removed at a later date.
 
 # Upcoming Changes
 I'm planning on revisiting this in the near future and making a few changes. Once these changes are made, I'll update it on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2553024572).
 * Address the bugs mentioned above.
-* Move from `Weapons > Other` to the toolbar to the right of the spawn menu.
 * Add an alternative method for getting a zone ID for instances where the player can't get to the center to see it.
 * In the `nsz:RegisterZone()` function, I want to add support for the first argument to just be a table with all the parameters in no particular order thanks to indexing.
 * Make `nsz:InZone()` function check a cache, and add a boolean argument to force check.
