@@ -44,32 +44,32 @@ function TOOL:LeftClick()
         end
 
         local dist = 100000000
-		if isvector(nsz.currentZone.points[1]) and not input.IsKeyDown(KEY_LALT) then
-			dist = 100
-		end
+        if isvector(nsz.currentZone.points[1]) and not input.IsKeyDown(KEY_LALT) then
+            dist = 100
+        end
 
         -- I know :LeftClick() provides a trace, but I want to control the distance.
-		local trace = self.Owner:GetEyeTrace()
-		trace.start = self.Owner:GetShootPos()
-		trace.endpos = trace.start + self.Owner:GetAimVector() * dist
-		trace.filter = self.Owner
-		local trace = util.TraceLine(trace)
+        local trace = self.Owner:GetEyeTrace()
+        trace.start = self.Owner:GetShootPos()
+        trace.endpos = trace.start + self.Owner:GetAimVector() * dist
+        trace.filter = self.Owner
+        local trace = util.TraceLine(trace)
 
-		if isvector(trace.HitPos) then
-			table.insert(nsz.currentZone.points, trace.HitPos)
+        if isvector(trace.HitPos) then
+            table.insert(nsz.currentZone.points, trace.HitPos)
 
-			if #nsz.currentZone.points == 2 then
-				chat.AddText("NSZ: Creating zone..")
-				net.Start("nsz_upload")
-					net.WriteTable(nsz.currentZone)
-				net.SendToServer()
-				nsz.currentZone.points = {}
-			else
-				chat.AddText("NSZ: Point 1 set, please click elsewhere for the second point!")
-			end
-		else -- This should never happen, as a trace will always return the HitPos even if it didn't hit anything
-			chat.AddText("NSZ Error: Invalid point (unable to locate where you're aiming)!")
-		end
+            if #nsz.currentZone.points == 2 then
+                chat.AddText("NSZ: Creating zone..")
+                net.Start("nsz_upload")
+                    net.WriteTable(nsz.currentZone)
+                net.SendToServer()
+                nsz.currentZone.points = {}
+            else
+                chat.AddText("NSZ: Point 1 set, please click elsewhere for the second point!")
+            end
+        else -- This should never happen, as a trace will always return the HitPos even if it didn't hit anything
+            chat.AddText("NSZ Error: Invalid point (unable to locate where you're aiming)!")
+        end
     end
 end
 

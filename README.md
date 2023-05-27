@@ -31,6 +31,7 @@ I'm planning on revisiting this in the near future and making a few changes. Onc
 * Make `nsz:InZone()` function check a cache, and add a boolean argument to force check.
 * Add a variable for no pvp zones that will allow a player back into a zone if they haven't died since they left.
 * Deprecate "EntityZoneEnter" and "EntityZoneLeave" hooks in favor of "NSZEnter" and "NSZLeave". The reason for this is that the current hook names don't really tell you what it's from, could cause conflicts. I will remove the old hooks a month or so after updating the workshop page.
+* Adding on with the hooks idea above, I want a "NSZThink" hook that runs with standard "Think". It'll supply a table indexed by zone types and return all entities with their elapsed time in that zone.
 * Expand on `nsz_show_zones` debug GUI to give more information. Mainly how many props used AABB vs SAT detection.
 * Add language support.
 * Add a zone preview and even placing multiple zones before uploading to the server.
