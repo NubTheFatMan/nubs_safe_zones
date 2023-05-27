@@ -9,6 +9,7 @@ Safe Zone mod for Garry's Mod. This was developed a while ago, but I never actua
 * `nsz_show_zones (0|1)` - Shows a debug of all the current zones and how long it took to scan props during every tick.
 * `nsz_show_display (0|1)` - Shows or hides the "you are in zone" indicator.
 * `nsz_delete <zone ID>` - Deletes a zone by ID. SuperAdmin only be default, however has ULX permission support. You can get a zone ID by using the console command `nsz_show_zones`
+* `nsz_gui` - Opens the GUI for the mod. Will eventually be moved to an umbrella command, `nsz` with argument `gui`.
 # Server Console Commands and Variables
 * `nsz_prop_checks_per_tick <# props>` - How many props to check per server tick. Higher number = more lag, but faster detection. Default is 50.
 * `nsz_aabb_v_sat_sensitivity <sensitivity>` - Range of 0 to 90. This is the angle which determines whether to use AABB (Axis Aligned Bounding Box) detection or SAT (Separating Axis Theorem) detection. 0 = always use SAT (slow but accurate), 90 = always use AABB (fast with false positives). Default is 10.
