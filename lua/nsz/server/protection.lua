@@ -14,8 +14,8 @@ hook.Add("EntityTakeDamage", "nsz_prevent_damage", function(targ, dmg)
 
     -- Attacker himself is in a zone
     if IsValid(attacker) and attacker:IsPlayer() then
-        if istable(nsz.cache[attacker:SteamID()]) then
-            for zone, _ in pairs(nsz.cache[attacker:SteamID()]) do
+        if istable(nsz.playerCache[attacker:SteamID()]) then
+            for zone, _ in pairs(nsz.playerCache[attacker:SteamID()]) do
                 if checkSafe(attacker, zone) then return true end
             end
         end
@@ -25,8 +25,8 @@ hook.Add("EntityTakeDamage", "nsz_prevent_damage", function(targ, dmg)
     if IsValid(attacker) and attacker.IsWeapon and attacker:IsWeapon() then
         attacker = attacker.Owner
         if isentity(attacker) and attacker:IsPlayer() then
-            if istable(nsz.cache[attacker:SteamID()]) then
-                for zone, _ in pairs(nsz.cache[attacker:SteamID()]) do
+            if istable(nsz.playerCache[attacker:SteamID()]) then
+                for zone, _ in pairs(nsz.playerCache[attacker:SteamID()]) do
                     if checkSafe(attacker, zone) then return true end
                 end
             end
@@ -35,8 +35,8 @@ hook.Add("EntityTakeDamage", "nsz_prevent_damage", function(targ, dmg)
 
     -- The player themself is in the zone
     if targ:IsPlayer() then
-        if istable(nsz.cache[targ:SteamID()]) then
-            for zone, _ in pairs(nsz.cache[targ:SteamID()]) do
+        if istable(nsz.playerCache[targ:SteamID()]) then
+            for zone, _ in pairs(nsz.playerCache[targ:SteamID()]) do
                 if checkSafe(targ, zone) then return true end
             end
         end

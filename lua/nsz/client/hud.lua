@@ -4,6 +4,11 @@ surface.CreateFont("nsz_large", {
     weight = 500,
     antialias = true
 })
+surface.CreateFont("nsz_between", {
+    size = 20,
+    weight = 500,
+    antialias = true
+})
 surface.CreateFont("nsz_normal", {
     size = 16,
     weight = 500,
@@ -16,6 +21,8 @@ net.Receive("nsz_prop_check", function()
     time = net.ReadFloat()
     scanCount = net.ReadString()
 end)
+
+nsz.previewAllZones = false
 
 -- Rendering the display
 local icons = {}
@@ -41,12 +48,21 @@ hook.Add("HUDPaint", "nsz_show_in_zone", function()
         end
     end
 
-    if GetConVar("nsz_show_display"):GetInt() > 0 then
+    if GetConVar("nsz_show_display"):GetInt() > 0 and not IsValid(nsz.gui.offsetEditor) then
         local zones = {}
-        for id, zone in pairs(nsz.zonetypes) do
-            if icons[zone.type] == nil then icons[zone.type] = Material(zone.icon) end
-            if not isstring(zone.type) then continue end
-            if LocalPlayer():GetNWBool("nsz_in_zone_" .. zone.type) and not table.HasValue(zones, zone.type) then table.insert(zones, zone.type) end
+        if nsz.previewAllZones and nsz.gui.IsOpen() then 
+            local zoneIdentifiers = table.GetKeys(nsz.zonetypes)
+            for i = 1, nsz.clientSettings.visibleZones do 
+                local index = ((i - 1) % #zoneIdentifiers) + 1
+                table.insert(zones, zoneIdentifiers[index])
+            end
+        else 
+            for id, zone in pairs(nsz.zonetypes) do
+                if icons[zone.type] == nil then icons[zone.type] = Material(zone.icon) end
+                if not isstring(zone.type) then continue end
+                if LocalPlayer():GetNWBool("nsz_in_zone_" .. zone.type) and not table.HasValue(zones, zone.type) then table.insert(zones, zone.type) end
+                if #zones >= nsz.clientSettings.visibleZones then break end
+            end
         end
 
         if #zones > 0 then
@@ -74,25 +90,37 @@ hook.Add("HUDPaint", "nsz_show_in_zone", function()
             local txtw = math.max(titles, subtitles)
             w = w + txtw
 
-            local x = ScrW()/2 - w/2
-            local y = 4
+            local offset = nsz.clientSettings.dockOffset
+            local dock = nsz.clientSettings.dockPosition - 1
+            local totalHeight = (#zones * h) + ((#zones - 1) * 4)
 
-            for i, zone in ipairs(zones) do
-                draw.RoundedBox(0, x, y, w, h, Color(100, 100, 100))
+            local x = ((ScrW() - w) * (dock % 3) / 2) + offset[1]
+            local y = ((ScrH() - totalHeight) * math.floor(dock / 3) / 2) + offset[2]
+
+            for i, zoneType in ipairs(zones) do
+                local zone = nsz.zonetypes[zoneType]
+                if nsz.clientSettings.background.color.a < 255 and nsz.clientSettings.background.blur then 
+                    nsz.blurFunction(x, y, w, h, nsz.clientSettings.background.blurStrength)
+                end
+                draw.RoundedBox(0, x, y, w, h, nsz.clientSettings.background.color)
 
                 surface.SetDrawColor(255, 255, 255)
-                surface.SetMaterial(icons[nsz.zonetypes[zone].type])
+                surface.SetMaterial(icons[zone.type])
                 surface.DrawTexturedRect(x + 4, y + 4, h - 8, h - 8)
 
+                local title = zone.title
+                -- if GetConVar("nsz_show_zones"):GetInt() > 0 then 
+                --     title = title .. " [" .. zone.id .. "]"
+                -- end
                 draw.Text({
-                    text = nsz.zonetypes[zone].title,
+                    text = title,
                     font = font_large,
                     pos = {x + w - txtw/2 - 4, y + 4},
                     xalign = TEXT_ALIGN_CENTER,
-                    color = nsz.zonetypes[zone].color
+                    color = zone.color
                 })
                 draw.Text({
-                    text = nsz.zonetypes[zone].subtitle,
+                    text = zone.subtitle,
                     font = font_normal,
                     pos = {x + w - txtw/2 - 4, y + 30},
                     xalign = TEXT_ALIGN_CENTER,

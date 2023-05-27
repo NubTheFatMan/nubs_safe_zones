@@ -188,7 +188,7 @@ function nsz:InZone(ent, filter)
     return zones
 end
 
-nsz.cache = {}
+nsz.playerCache = nsz.playerCache or {}
 hook.Add("Think", "nsz_hooks", function()
     -- We don't want to loop anything if no zone exists
     if #nsz.zones == 0 then return end
@@ -199,7 +199,7 @@ hook.Add("Think", "nsz_hooks", function()
     -- Loop through all the players
     for i, ply in ipairs(player.GetAll()) do
         scans = scans + 1
-        if not istable(nsz.cache[ply:SteamID()]) then nsz.cache[ply:SteamID()] = {} end
+        if not istable(nsz.playerCache[ply:SteamID()]) then nsz.playerCache[ply:SteamID()] = {} end
 
         -- Check if a player isn't moving (probably not needed tbh, over-optimization)
         local pos = {ply:GetPos()}
@@ -212,7 +212,7 @@ hook.Add("Think", "nsz_hooks", function()
         for id, info in pairs(nsz.zonetypes) do -- Loop through all the regisered zones
             if not istable(info) then continue end -- Invalid zone somewhow
 
-            if table.HasValue(zones, info.type) and not nsz.cache[ply:SteamID()][info.type] then
+            if table.HasValue(zones, info.type) and not nsz.playerCache[ply:SteamID()][info.type] then
                 -- This is the hook you use to change the behavior of entering
                 -- zones. Return true to allow, false to disallow
                 local allow = hook.Run("EntityZoneEnter", ply, info.type)
@@ -222,12 +222,12 @@ hook.Add("Think", "nsz_hooks", function()
                     ply:SetNWBool("nsz_in_zone_" .. info.type, true)
                 end
 
-                nsz.cache[ply:SteamID()][info.type] = true
-            elseif not table.HasValue(zones, info.type) and nsz.cache[ply:SteamID()][info.type] then
+                nsz.playerCache[ply:SteamID()][info.type] = true
+            elseif not table.HasValue(zones, info.type) and nsz.playerCache[ply:SteamID()][info.type] then
                 hook.Run("EntityZoneLeave", ply, info.type)
 
                 ply:SetNWBool("nsz_in_zone_" .. info.type, false)
-                nsz.cache[ply:SteamID()][info.type] = nil
+                nsz.playerCache[ply:SteamID()][info.type] = nil
             end
         end
     end
@@ -267,6 +267,7 @@ end)
 
 local index = 0
 local entities
+nsz.entityCache = nsz.entityCache or {}
 -- This hook handles props (for no building)
 hook.Add("Think", "nsz_anti_props", function()
     -- We don't want to loop anything if there are no zones

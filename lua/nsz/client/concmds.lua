@@ -13,6 +13,13 @@ concommand.Add("nsz_delete", function(ply, cmd, args, argStr)
     net.SendToServer()
 end)
 
+concommand.Add("nsz_gui", function(ply, cmd, args, argStr)
+    if gui.IsGameUIVisible() then 
+        gui.HideGameUI()
+    end
+    nsz.gui.Open()
+end)
+
 -- This is when the server sends zones to the client
 net.Receive("nsz_download", function()
     nsz.zones = net.ReadTable()

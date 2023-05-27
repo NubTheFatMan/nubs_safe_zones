@@ -20,9 +20,20 @@ include("nsz/server/registration.lua")
 AddCSLuaFile("nsz/client/concmds.lua")
 AddCSLuaFile("nsz/client/hud.lua")
 
+AddCSLuaFile("nsz/client/menu.lua")
+AddCSLuaFile("nsz/client/menu_tabs/client_settings.lua")
+AddCSLuaFile("nsz/client/menu_tabs/server_settings.lua")
+
+AddCSLuaFile("nsz/client/vgui/button.lua")
+AddCSLuaFile("nsz/client/vgui/tab_menu.lua")
+
 -- Register the materials for the client to use on the hud
 resource.AddFile("materials/nsz/nsz.png")
 resource.AddFile("materials/nsz/no_build_zone.png")
+
+-- Send sounds to client
+resource.AddFile("sound/nsz/clickdown.ogg")
+resource.AddFile("sound/nsz/clickup.ogg")
 
 MsgN("Nub's Safe Zone's fully loaded! Version: " .. nsz.version)
 

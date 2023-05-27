@@ -16,6 +16,11 @@ Safe Zone mod for Garry's Mod. This was developed a while ago, but I never actua
 Please note that I'm not currently working on this mod anymore, so no plans on fixing these are coming any time soon.
 1. If two zones of the same type are next to each other, and you drag a prop through the line between them, the prop will flicker out and back into the zone.
 2. If all zones are removed, any entities in a zone will remain marked in the zones they were in until another zone is created.
+3. Safe zones are only supposed to prevent damage, however permit building. Instead, they ghost props.
+
+# Completed Features
+These are features that were in Upcoming Changes listed below, however have been completed and moved to this list.
+* Client settings are now available. Mainly you can just change where the zone indicator appears on screen and what it looks like.
 
 # Upcoming Changes
 I'm planning on revisiting this in the near future and making a few changes. Once these changes are made, I'll update it on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2553024572).
@@ -30,5 +35,4 @@ I'm planning on revisiting this in the near future and making a few changes. Onc
 * Add language support.
 * Add a zone preview and even placing multiple zones before uploading to the server.
 * I'd like to figure out a way to optimize nearby/intersecting zones by merging them with the feature above. This may be cut.
-* I want to make the HUD showing which zones you are in customizable. Could be moved/docked to a separate part of the screen, background could be transparent and/or blurry, and even recolored.
 * For the steam workshop, figure out why the materials aren't sending to the client if the server isn't using this github repo.
