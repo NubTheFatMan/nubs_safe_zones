@@ -6,15 +6,13 @@ nsz           = nsz           or {}
 nsz.zones     = nsz.zones     or {}
 nsz.zonetypes = nsz.zonetypes or {}
 
--- This is used in the version checker (see EOF)
-nsz.version = nsz.version or "1-20.4.17"
-
 -- Loading this mod
 include("nsz/server/concmds.lua")
 include("nsz/server/data.lua")
 include("nsz/server/detection.lua")
-include("nsz/server/protection.lua")
 include("nsz/server/registration.lua")
+
+include("nsz/server/default_zones.lua")
 
 -- Make the client download the client files
 AddCSLuaFile("nsz/client/concmds.lua")
@@ -35,25 +33,4 @@ resource.AddFile("materials/nsz/no_build_zone.png")
 resource.AddFile("sound/nsz/clickdown.ogg")
 resource.AddFile("sound/nsz/clickup.ogg")
 
-MsgN("Nub's Safe Zone's fully loaded! Version: " .. nsz.version)
-
--- Checking for updates
-hook.Add("Initialize", "nsz_check_for_update", function()
-    MsgN("Retrieving latest version of Nub's Safe Zone...")
-    http.Fetch("http://nubstoys.xyz/gmod/mods/nubs_safe_zone/version.txt",
-    function(body, size, headers, code) -- Successful retrieval
-        body = string.Trim(body) -- Sometimes the body will have an extra empty space
-        if nsz.version ~= body then
-            nsz.needs_update = true -- This bool is used when a player first spawns, see EOF nsz/server/data.lua
-            MsgN("Nub's Safe Zones needs an update!")
-            MsgN("Running " .. nsz.version)
-            MsgN("Latest: " .. body)
-        else
-            MsgN("Nub's Safe Zones is up to date!")
-        end
-    end,
-    function(err) -- Invalid retrieval
-        MsgN("Unable to retrieve Nub's Safe Zone's version.")
-    end
-    )
-end)
+MsgN("Nub's Safe Zone's fully loaded!")

@@ -22,17 +22,23 @@ Please note that I'm not currently working on this mod anymore, so no plans on f
 # Completed Features
 These are features that were in Upcoming Changes listed below, however have been completed and moved to this list.
 * Client settings are now available. Mainly you can just change where the zone indicator appears on screen and what it looks like.
-* Moved from `Weapons > Other` to the toolbar to the right of the spawn menu. The weapon will still remain with a deprecation notice, will be removed at a later date.
+* Moved from `Weapons > Other` to the toolbar to the right of the spawn menu. Removed the weapon version.
+* Completely overhauled zones. Before, prop ghosting and preventing damage was baked into the mod. Now I've reworked the "API" if you will. Now the default zones are equal to any other addon for this mod, with some changes: 
+    * Hooks "EntityZoneEnter" and "EntityZoneLeave" were removed. 
+    * New hooks:
+        Hook Name | Arguments | Description
+        --------- | --------- | ----------
+        NSZRequestEnter | string zoneIdentifier, Entity/Player ent | Fires when something tries to enter a zone. Return `true` to block it from entering.
+        NSZEntered | string zoneIdentifier, Entity/Player ent | Fires when something successfully enters a zone.
+        NSZExit | string zoneIdentifier, Entity/Player ent | Fires when something exits a zone.
+        NSZThink | string zoneIdentifier, table players, table entities | Fires with standard "Think", however provides tables formatted as `players[Player ply] = number elapsedTimeInZone`. Same goes for entities.
 
 # Upcoming Changes
 I'm planning on revisiting this in the near future and making a few changes. Once these changes are made, I'll update it on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2553024572).
 * Address the bugs mentioned above.
 * Add an alternative method for getting a zone ID for instances where the player can't get to the center to see it.
 * In the `nsz:RegisterZone()` function, I want to add support for the first argument to just be a table with all the parameters in no particular order thanks to indexing.
-* Make `nsz:InZone()` function check a cache, and add a boolean argument to force check.
 * Add a variable for no pvp zones that will allow a player back into a zone if they haven't died since they left.
-* Deprecate "EntityZoneEnter" and "EntityZoneLeave" hooks in favor of "NSZEnter" and "NSZLeave". The reason for this is that the current hook names don't really tell you what it's from, could cause conflicts. I will remove the old hooks a month or so after updating the workshop page.
-* Adding on with the hooks idea above, I want a "NSZThink" hook that runs with standard "Think". It'll supply a table indexed by zone types and return all entities with their elapsed time in that zone.
 * Expand on `nsz_show_zones` debug GUI to give more information. Mainly how many props used AABB vs SAT detection.
 * Add language support.
 * Add a zone preview and even placing multiple zones before uploading to the server.

@@ -19,6 +19,16 @@ nsz.defaultClientSettings = nsz.defaultClientSettings or {
     }
 }
 
+-- Used in the event that a previously registered zone is no longer registered
+nsz.NULL_ZONE = {
+    title = "Invalid Zone",
+    subtitle = "This zone is no longer available (removed?)",
+    type = NULL,
+    icon = "https://i.redd.it/jft9hnt9a6p81.png",
+    color = Color(255, 255, 255),
+    vars = {}
+}
+
 local saveFile = "nubs_safe_zones_config.txt"
 function nsz.SaveClientSettings()
     file.Write(saveFile, util.TableToJSON(nsz.clientSettings))
@@ -55,3 +65,5 @@ include("nsz/client/menu_tabs/server_settings.lua")
 
 include("nsz/client/vgui/button.lua")
 include("nsz/client/vgui/tab_menu.lua")
+
+-- include("nsz/zones/safe.lua")

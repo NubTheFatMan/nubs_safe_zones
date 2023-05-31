@@ -188,54 +188,6 @@ function nsz:InZone(ent, filter)
     return zones
 end
 
-nsz.playerCache = nsz.playerCache or {}
-hook.Add("Think", "nsz_hooks", function()
-    -- We don't want to loop anything if no zone exists
-    if #nsz.zones == 0 then return end
-
-    -- Used for nsz_show_zones debug
-    local start = SysTime()
-
-    -- Loop through all the players
-    for i, ply in ipairs(player.GetAll()) do
-        scans = scans + 1
-        if not istable(nsz.playerCache[ply:SteamID()]) then nsz.playerCache[ply:SteamID()] = {} end
-
-        -- Check if a player isn't moving (probably not needed tbh, over-optimization)
-        local pos = {ply:GetPos()}
-        if ply.nsz_lastPos == pos then continue end
-        ply.nsz_lastPos = pos
-
-        checked = checked + 1
-        -- Check if they are in any zone and run if they're not in the cache
-        local zones = nsz:InZone(ply)
-        for id, info in pairs(nsz.zonetypes) do -- Loop through all the regisered zones
-            if not istable(info) then continue end -- Invalid zone somewhow
-
-            if table.HasValue(zones, info.type) and not nsz.playerCache[ply:SteamID()][info.type] then
-                -- This is the hook you use to change the behavior of entering
-                -- zones. Return true to allow, false to disallow
-                local allow = hook.Run("EntityZoneEnter", ply, info.type)
-                if isbool(allow) then
-                    ply:SetNWBool("nsz_in_zone_" .. info.type, allow)
-                else
-                    ply:SetNWBool("nsz_in_zone_" .. info.type, true)
-                end
-
-                nsz.playerCache[ply:SteamID()][info.type] = true
-            elseif not table.HasValue(zones, info.type) and nsz.playerCache[ply:SteamID()][info.type] then
-                hook.Run("EntityZoneLeave", ply, info.type)
-
-                ply:SetNWBool("nsz_in_zone_" .. info.type, false)
-                nsz.playerCache[ply:SteamID()][info.type] = nil
-            end
-        end
-    end
-
-    local fin = SysTime()
-    table.insert(times, fin - start)
-end)
-
 local function assignEnt(ent, ply)
     ent.nsz_zones = {}
     ent.nsz_collision = ent:GetCollisionGroup()
@@ -267,14 +219,64 @@ end)
 
 local index = 0
 local entities
+
+-- Difference between both caches is one is always true if in the zone, 
+-- the other can kick the player out and not fire NSZEnter again until they leave.
+nsz.playerCache = nsz.playerCache or {}
+nsz.truePlayerCache = nsz.truePlayerCache or {}
 nsz.entityCache = nsz.entityCache or {}
--- This hook handles props (for no building)
-hook.Add("Think", "nsz_anti_props", function()
+nsz.trueEntityCache = nsz.trueEntityCache or {}
+
+hook.Add("Think", "nsz_check", function()
     -- We don't want to loop anything if there are no zones
     if #nsz.zones == 0 then return end
 
     local start = SysTime()
 
+    -- Player zone detection
+    for i, ply in ipairs(player.GetAll()) do
+        scans = scans + 1
+        if not istable(nsz.playerCache[ply]) then 
+            nsz.playerCache[ply] = {} 
+            nsz.truePlayerCache[ply] = {} 
+        end
+
+        -- Check if a player isn't moving (probably not needed tbh, over-optimization)
+        local pos = {ply:GetPos()}
+        if ply.nsz_lastPos == pos then continue end
+        ply.nsz_lastPos = pos
+
+        checked = checked + 1
+        -- Check if they are in any zone and run if they're not in the cache
+        local zones = nsz:InZone(ply)
+        for id, info in pairs(nsz.zonetypes) do -- Loop through all the regisered zones
+            if not istable(info) then continue end -- Invalid zone somewhow
+
+            if table.HasValue(zones, info.type) and not nsz.playerCache[ply][info.type] and not nsz.truePlayerCache[ply][info.type] then
+                -- Return true to block from entering a zone
+                local blockFromEntering = hook.Run("NSZRequestEnter", info.type, ply)
+                if not isbool(blockFromEntering) then blockFromEntering = false end
+
+                ply:SetNWBool("nsz_in_zone_" .. info.type, not blockFromEntering)
+
+                if not blockFromEntering then 
+                    nsz.playerCache[ply][info.type] = SysTime()
+                    hook.Run("NSZEntered", info.type, ply)
+                end
+                nsz.truePlayerCache[ply][info.type] = true
+            elseif not table.HasValue(zones, info.type) and nsz.playerCache[ply][info.type] then
+                hook.Run("NSZExit", info.type, ply, false)
+
+                ply:SetNWBool("nsz_in_zone_" .. info.type, false)
+                nsz.playerCache[ply][info.type] = nil
+                nsz.truePlayerCache[ply][info.type] = nil
+            elseif not table.HasValue(zones, info.type) and nsz.truePlayerCache[ply][info.type] then
+                nsz.truePlayerCache[ply][info.type] = nil
+            end
+        end
+    end
+
+    -- Entity zone detection
     local ind = 0
     local maxInd = GetConVar("nsz_prop_checks_per_tick"):GetInt()
 
@@ -294,44 +296,10 @@ hook.Add("Think", "nsz_anti_props", function()
             if not IsValid(phys) then continue end
 
             -- local owner = ent.nsz_owner
-            local owner
-            if CPPI and ent.CPPIGetOwner then
-                owner = ent:CPPIGetOwner()
-            else
-                owner = ent:GetNWEntity("nsz_owner")
-            end
+            local owner = nsz:GetEntityOwner(ent)
 
             -- Completely skip this prop if there is no owner
             if IsValid(owner) and owner:IsPlayer() then
-                -- If it's ghosted, we want to make sure that it remains ghosted
-                if istable(ent.nsz_zones) then
-                    local z = ent.nsz_zones
-                    for zone, _ in pairs(z) do
-                        if not istable(nsz.zonetypes[zone]) then continue end
-                        local info = nsz.zonetypes[zone]
-
-                        local ghost
-                        if ULib ~= nil then
-                            ghost = true
-                            if ULib.ucl.query(owner, "nsz_" .. info.type .. " build") then ghost = false end
-                        else
-                            ghost = not owner:IsAdmin() -- Default behavior is to let admins build
-                        end
-
-                        if ghost then
-                            if ent:GetCollisionGroup() ~= COLLISION_GROUP_WORLD then
-                                ent.nsz_collision = ent:GetCollisionGroup()
-                                ent:SetCollisionGroup(COLLISION_GROUP_WORLD)
-                            end
-
-                            if ent:GetMaterial() ~= "models/props_lab/Tank_Glass001" then
-                                ent.nsz_mat = ent:GetMaterial()
-                                ent:SetMaterial("models/props_lab/Tank_Glass001")
-                            end
-                        end
-                    end
-                end
-
                 -- Custom sleep detection: normal method doesn't always work for dupes
                 if not istable(ent.nsz_cache) then
                     ent.nsz_cache = {
@@ -356,47 +324,34 @@ hook.Add("Think", "nsz_anti_props", function()
                 -- Exit if normal asleep
                 if phys:IsAsleep() then continue end
 
-                if not istable(ent.nsz_zones) then ent.nsz_zones = {} end
-                if not isnumber(ent.nsz_collision) then ent.nsz_collision = ent:GetCollisionGroup() end
-                if not isstring(ent.nsz_mat) then ent.nsz_mat = ent:GetMaterial() end
+                local entityIndex = ent:EntIndex()
+                if not istable(nsz.entityCache[entityIndex]) then 
+                    nsz.entityCache[entityIndex] = {} 
+                    nsz.trueEntityCache[entityIndex] = {} 
+                end
 
                 checked = checked + 1
                 local zones = nsz:InZone(ent)
                 for id, info in pairs(nsz.zonetypes) do
                     if not istable(info) then continue end -- Somehow an invalid zone type
 
-                    if table.HasValue(zones, info.type) and not ent.nsz_zones[info.type] then
-                        local allowed = hook.Run("EntityZoneEnter", ent, info.type) -- Return true to ghost it
-                        local ghost
-                        if isbool(allowed) then
-                            ghost = allowed
-                        else
-                            if ULib ~= nil then
-                                ghost = true
-                                if ULib.ucl.query(owner, "nsz_" .. info.type .. " build") then ghost = false end
-                            else
-                                ghost = not owner:IsAdmin() -- Default behavior is to let admins build
-                            end
-                        end
+                    if table.HasValue(zones, info.type) and not nsz.entityCache[entityIndex][info.type] and not nsz.trueEntityCache[entityIndex][info.type] then
+                        local blockFromEntering = hook.Run("NSZRequestEnter", info.type, ent)
+                        if not isbool(blockFromEntering) then blockFromEntering = false end
 
-                        if ghost then
-                            ent.nsz_zones[info.type] = true
-                            if ent:GetCollisionGroup() ~= COLLISION_GROUP_WORLD then
-                                ent.nsz_collision = ent:GetCollisionGroup()
-                                ent:SetCollisionGroup(COLLISION_GROUP_WORLD)
-                            end
-
-                            if ent:GetMaterial() ~= "models/props_lab/Tank_Glass001" then
-                                ent.nsz_mat = ent:GetMaterial()
-                                ent:SetMaterial("models/props_lab/Tank_Glass001")
-                            end
+                        if not blockFromEntering then 
+                            nsz.entityCache[entityIndex][info.type] = SysTime()
+                            hook.Run("NSZEntered", info.type, ent)
                         end
-                    elseif not table.HasValue(zones, info.type) and ent.nsz_zones[info.type] then
+                        nsz.trueEntityCache[entityIndex][info.type] = true
+                    elseif not table.HasValue(zones, info.type) and nsz.entityCache[entityIndex][info.type] then
+                        hook.Run("NSZExit", info.type, ent, false)
                         hook.Run("EntityZoneLeave", ent, info.type)
 
-                        ent.nsz_zones[info.type] = nil
-                        ent:SetCollisionGroup(ent.nsz_collision)
-                        ent:SetMaterial(ent.nsz_mat)
+                        nsz.entityCache[entityIndex][info.type] = nil
+                        nsz.trueEntityCache[entityIndex][info.type] = nil
+                    elseif not table.HasValue(zones, info.type) and nsz.trueEntityCache[entityIndex][info.type] then 
+                        nsz.trueEntityCache[entityIndex][info.type] = nil
                     end
                 end
             end
@@ -410,4 +365,108 @@ hook.Add("Think", "nsz_anti_props", function()
 
     local fin = SysTime()
     table.insert(times, fin - start)
+
+    -- Loop through the player cache and run associated hooks
+    local zones = {}
+    for player, zoneTypes in pairs(nsz.playerCache) do 
+        for zone, enterTime in pairs(zoneTypes) do 
+            if not istable(zones[zone]) then zones[zone] = {players = {}, entities = {}} end
+            zones[zone].players[player] = SysTime() - enterTime
+        end
+    end
+    for entityIndex, zoneTypes in pairs(nsz.entityCache) do 
+        local ent = ents.GetByIndex(entityIndex)
+        if not IsValid(ent) then 
+            nsz.entityCache[entityIndex] = nil
+            nsz.trueEntityCache[entityIndex] = nil
+            continue
+        end
+
+        for zone, enterTime in pairs(zoneTypes) do 
+            if not istable(zones[zone]) then zones[zone] = {players = {}, entities = {}} end
+            zones[zone].entities[ent] = SysTime() - enterTime
+        end
+    end
+
+    for zoneType, zoneData in pairs(zones) do 
+        hook.Run("NSZThink", zoneType, zoneData.players, zoneData.entities)
+    end
+end)
+
+function nsz:GetEntityOwner(entity)
+    if not IsValid(entity) then return NULL end
+    if CPPI and entity.CPPIGetOwner then 
+        return entity:CPPIGetOwner()
+    else 
+        return entity:GetNWEntity("nsz_owner", NULL)
+    end
+end
+
+-- Returns the original, modifiable cache for an entity/player. Be careful if you do modify it,
+-- you coule break something
+function nsz:GetZonesTable(ent)
+    if IsEntity(ent) then 
+        local cache
+        if ent:IsPlayer() then cache = nsz.playerCache[ent]
+        else cache = nsz.entityCache[ent:EntIndex()] end
+
+        if istable(cache) then return cache end
+    end
+    return {}
+end
+
+-- Returns a sequential table of all zones a player/entity is in
+function nsz:GetZones(ent)
+    if IsEntity(ent) then 
+        local cache = nsz:GetZonesTable(ent)
+        return table.GetKeys(cache)
+    end
+    return {}
+end
+
+-- Checks if a player or entity is in a specified zone (string or table of strings)
+function nsz:InZoneCache(ent, zoneFilter)
+    if IsEntity(ent) then 
+        local zones = nsz:GetZones(ent)
+        if isstring(zoneFilter) then 
+            return table.HasValue(zones, zoneFilter)
+        elseif istable(zoneFilter) then 
+            for i, zone in ipairs(zoneFilter) do 
+                if table.HasValue(zones, zone) then return true end
+            end
+        end
+    end
+    return false
+end
+
+-- Removes a player/entity from a zone(s) and fires hook "NSZExit"
+-- "NSZRequestEnter" won't fire again until they leave the zone and try re-entering.
+function nsz:KickFromZone(ent, zoneFilter)
+    if IsEntity(ent) then 
+        local zonesTable = nsz:GetZonesTable(ent)
+        
+        if isstring(zoneFilter) then 
+            if istable(zonesTable[zoneFilter]) then 
+                zonesTable[zoneFilter] = nil
+                hook.Run("NSZExit", zoneFilter, true)
+            end
+        elseif istable(zoneFilter) then  
+            for i, zone in ipairs(zoneFilter) do 
+                if istable(zoneTable[zone]) then 
+                    zonesTable[zone] = nil
+                    hook.Run("NSZExit", zone, true)
+                end
+            end
+        end
+    end
+end
+
+hook.Add("EntityRemoved", "NSZ Cleanup Cache", function(entity)
+    local index = entity:EntIndex()
+    if nsz.entityCache[index] then nsz.entityCache[index] = nil end
+    if nsz.trueEntityCache[index] then nsz.trueEntityCache[index] = nil end
+end)
+hook.Add("PlayerDisconnected", "NSZ Cleanup Cache", function(player)
+    if nsz.playerCache[player] then nsz.playerCache[player] = nil end
+    if nsz.truePlayerCache[player] then nsz.truePlayerCache[player] = nil end
 end)
