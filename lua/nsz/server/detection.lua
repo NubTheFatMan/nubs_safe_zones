@@ -259,7 +259,9 @@ hook.Add("Think", "nsz_check", function()
 
                 ply:SetNWBool("nsz_in_zone_" .. info.type, not blockFromEntering)
 
-                if not blockFromEntering then 
+                if blockFromEntering then 
+                    hook.Run("NSZEntryDenied", info.type, ply)
+                else
                     nsz.playerCache[ply][info.type] = SysTime()
                     hook.Run("NSZEntered", info.type, ply)
                 end
@@ -339,7 +341,9 @@ hook.Add("Think", "nsz_check", function()
                         local blockFromEntering = hook.Run("NSZRequestEnter", info.type, ent)
                         if not isbool(blockFromEntering) then blockFromEntering = false end
 
-                        if not blockFromEntering then 
+                        if blockFromEntering then 
+                            hook.Run("NSZEntryDenied", info.type, ent)
+                        else
                             nsz.entityCache[entityIndex][info.type] = SysTime()
                             hook.Run("NSZEntered", info.type, ent)
                         end
@@ -403,7 +407,7 @@ function nsz:GetEntityOwner(entity)
 end
 
 -- Returns the original, modifiable cache for an entity/player. Be careful if you do modify it,
--- you coule break something
+-- you could break something
 function nsz:GetZonesTable(ent)
     if IsEntity(ent) then 
         local cache

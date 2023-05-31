@@ -17,7 +17,6 @@ Safe Zone mod for Garry's Mod. This was developed a while ago, but I never actua
 Please note that I'm not currently working on this mod anymore, so no plans on fixing these are coming any time soon.
 1. If two zones of the same type are next to each other, and you drag a prop through the line between them, the prop will flicker out and back into the zone.
 2. If all zones are removed, any entities in a zone will remain marked in the zones they were in until another zone is created.
-3. Safe zones are only supposed to prevent damage, however permit building. Instead, they ghost props.
 
 # Completed Features
 These are features that were in Upcoming Changes listed below, however have been completed and moved to this list.
@@ -29,9 +28,19 @@ These are features that were in Upcoming Changes listed below, however have been
         Hook Name | Arguments | Description
         --------- | --------- | ----------
         NSZRequestEnter | string zoneIdentifier, Entity/Player ent | Fires when something tries to enter a zone. Return `true` to block it from entering.
+        NSZEntryDenied | string zoneIdentifer, Entity/Player ent | Fires when the NSZRequestEnter hook had a return value of `true`
         NSZEntered | string zoneIdentifier, Entity/Player ent | Fires when something successfully enters a zone.
         NSZExit | string zoneIdentifier, Entity/Player ent | Fires when something exits a zone.
         NSZThink | string zoneIdentifier, table players, table entities | Fires with standard "Think", however provides tables formatted as `players[Player ply] = number elapsedTimeInZone`. Same goes for entities.
+    * New functions:
+        Function | Description | Return value
+        -------- | ----------- | ----
+        `nsz:GetEntityOwner(Entity ent)` | Tries to use `CPPI` (which every server should have) to get a player. Falls back to "[Spawned](https://wiki.facepunch.com/gmod/~search:PlayerSpawned)" hooks. | Returns a `Player` or `NULL`.
+        `nsz:GetZones(Entity/Player ent)` | Checks the cache for the `ent` and returns all that they are in. | Returns a `sequential table` of all zones the `ent` is in.
+        `nsz:InZoneCache(Entity/Player ent, string/table zoneFilter)` | Checks the cache for the `ent`. | Returns a `boolean` of whether or not the `ent` is in the `zoneFilter`.
+        `nsz:KickFromZone(Entity/Player ent, string/table zoneFilter)` | Kicks the ent from any of the supplied zones in `zoneFilter`. | Returns `nil`
+        (Internal) `nsz:GetZonesTable(Entity/Player ent)` | Gets the modifiable cache table for the `ent`. | Returns a `table` formatted as `table[zoneIdentifer] = timeEnteredZone`.
+
 
 # Upcoming Changes
 I'm planning on revisiting this in the near future and making a few changes. Once these changes are made, I'll update it on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2553024572).
