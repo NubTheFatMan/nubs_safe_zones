@@ -27,6 +27,7 @@ function nsz:SendZones(ply)
     net.Start("nsz_download")
         net.WriteTable(nsz.zones or {})
         net.WriteTable(nsz.zonetypes or {})
+        net.WriteTable(nsz.zoneSettings or {})
     if IsValid(ply) and ply.IsPlayer and ply:IsPlayer() then
         net.Send(ply)
     else
@@ -35,16 +36,46 @@ function nsz:SendZones(ply)
 end
 
 -- Auto refresh zones to the client every minute
-timer.Create("nsz_refresh", 60, 0, function()
-    nsz:SendZones()
+-- timer.Create("nsz_refresh", 60, 0, function()
+--     nsz:SendZones()
+-- end)
+hook.Add("PlayerInitialSpawn", "nsz_send_zones", function(ply)
+    nsz:SendZones(ply)
 end)
 
 -- Loading data
 local zones = file.Read("nubs_safe_zone/zones/" .. game.GetMap() .. ".txt")
 if zones then
     nsz.zones = util.JSONToTable(zones) or {}
+
+    -- legacy identifier key was `type`. This brings it up to speed
+    local renamed = false
+    for i, zone in ipairs(nsz.zones) do 
+        if not isstring(zone.identifier) and isstring(zone.type) then 
+            zone.identifier = zone.type
+            renamed = true
+        end
+    end
+    if renamed then nsz:SaveZones() end
 else
     nsz.zones = nsz.zones or {}
+end
+
+-- Zone settings
+local settings = file.Read("nubs_safe_zone/zonesettings.txt")
+if settings then 
+    nsz.zoneSettings = util.JSONToTable(settings) or {}
+else
+    nsz.zoneSettings = {}
+end
+function nsz.SaveZoneSettings()
+    file.Write("nubs_safe_zone/zonesettings.txt", util.TableToJSON(nsz.zoneSettings))
+end
+
+-- Allow the weapon to be used (ULX support)
+if ULib ~= nil then
+    ULib.ucl.registerAccess("Create Zones", "superadmin", "Users with this permission can create and delete zones.", "Nub's Safe Zones")
+    ULib.ucl.registerAccess("Manage Zone Settings", "superadmin", "These users can change settings in the Zone Settings tab.", "Nub's Safe Zones")
 end
 
 -- Player creating a zone
@@ -54,7 +85,7 @@ net.Receive("nsz_upload", function(len, ply)
     -- First check if they have permission
     local can = ply:IsSuperAdmin() -- Default behavior is to let superadmins manage zones
     if ULib ~= nil then
-        can = ULib.ucl.query(ply, "nsz_create_zones")
+        can = ULib.ucl.query(ply, "Create Zones")
     end
 
     if not can then
@@ -62,13 +93,13 @@ net.Receive("nsz_upload", function(len, ply)
         return
     end
 
-    if not isstring(zone.type) then -- They didn't send a string for the zone type
+    if not isstring(zone.identifier) then -- They didn't send a string for the zone type
         ply:ChatPrint("NSZ Error: You need a type of zone.")
         return
     end
 
     if not istable(zone.points) then -- They didn't send valid corners for the zone
-        ply:ChatPrint("NSZ Error: You need two positions for a safe zone.")
+        ply:ChatPrint("NSZ Error: You need two positions for a zone.")
         return
     end
 
@@ -97,13 +128,4 @@ net.Receive("nsz_upload", function(len, ply)
     ply:ChatPrint("NSZ: Success!")
     nsz:SendZones()
     nsz:SaveZones()
-end)
-
-hook.Add("PlayerInitialSpawn", "nsz_send_zones", function(ply)
-    nsz:SendZones(ply)
-
-    -- If a new version was found when the server started, let the client know.
-    if nsz.needs_update then
-        ply:ChatPrint("NSZ: Update available!")
-    end
 end)

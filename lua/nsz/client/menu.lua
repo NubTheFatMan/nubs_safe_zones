@@ -31,7 +31,7 @@ function nsz.gui.Open()
     if nsz.gui.IsOpen() then nsz.gui.panel:Remove() end 
 
     nsz.gui.panel = vgui.Create("DFrame")
-    nsz.gui.panel:SetTitle("Safe Zones Interface")
+    nsz.gui.panel:SetTitle("#nsz.menu.title." .. nsz.clientSettings.language)
     nsz.gui.panel:SetSize(ScrW()/2, ScrH()/2)
     nsz.gui.panel:SetDraggable(false)
     nsz.gui.panel:SetSizable(false)
@@ -58,7 +58,14 @@ function nsz.gui.Open()
     tabMenu:Dock(FILL)
 
     for i, tab in ipairs(nsz.gui.tabs) do
-        tabMenu:AddTab(tab.title, tab.CreateContent, i == 1)
+        local title
+        if isstring(tab.title) then 
+            title = tab.title
+        else 
+            title = "#nsz.menu." .. tab.identifier .. "." .. nsz.clientSettings.language
+        end
+
+        tabMenu:AddTab(title, tab.CreateContent, i == 1)
     end
 end
 
@@ -80,12 +87,14 @@ end)
 
 function nsz.gui.AddTab(options)
     local tab = table.Copy(options)
-    if not isstring(tab.title) then tab.title = "Unnamed" end
+    -- if not isstring(tab.title) then tab.title = "#nsz.menu.unnamed." .. nsz.clientSettings.language end
     if not isnumber(tab.sort) then tab.sort = 0 end
-    if not isbool(tab.forcedPrivilege) then tab.forcedPrivilege = false end
+    -- if not isbool(tab.forcedPrivilege) then tab.forcedPrivilege = false end
+    
+    if not isstring(tab.identifier) then tab.identifier = "null" end
 
     for i, existingTab in ipairs(nsz.gui.tabs) do 
-        if existingTab.title == tab.title then 
+        if existingTab.identifier == tab.identifier then 
             table.remove(nsz.gui.tabs, i)
             break
         end

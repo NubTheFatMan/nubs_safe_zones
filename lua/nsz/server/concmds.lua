@@ -8,7 +8,7 @@ net.Receive("nsz_delete", function(len, ply)
 
     local str = net.ReadString()
     if ULib ~= nil then
-        if not ULib.ucl.query(ply, "nsz_create_zones") then ply:ChatPrint("NSZ Error: You don't have permission to delete a zone.") return end
+        if not ULib.ucl.query(ply, "Create Zones") then ply:ChatPrint("NSZ Error: You don't have permission to delete a zone.") return end
     else
         if not ply:IsSuperAdmin() then ply:ChatPrint("NSZ Error: You must be a superadmin to delete a zone.") return end
     end
@@ -45,7 +45,7 @@ net.Receive("nsz_delete", function(len, ply)
 
             local deleted = 0
             for i = #nsz.zones, 1, -1 do
-                if nsz.zones[i].type == typ then
+                if nsz.zones[i].identifier == typ then
                     deleted = deleted + 1
                     table.remove(nsz.zones, i)
                 end

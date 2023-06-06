@@ -10,20 +10,24 @@ nsz.zonetypes = nsz.zonetypes or {}
 include("nsz/server/concmds.lua")
 include("nsz/server/data.lua")
 include("nsz/server/detection.lua")
-include("nsz/server/registration.lua")
 
-include("nsz/server/default_zones.lua")
+include("nsz/shared/registration.lua")
+include("nsz/shared/default_zones.lua")
 
 -- Make the client download the client files
 AddCSLuaFile("nsz/client/concmds.lua")
 AddCSLuaFile("nsz/client/hud.lua")
+AddCSLuaFile("nsz/client/language.lua")
 
 AddCSLuaFile("nsz/client/menu.lua")
 AddCSLuaFile("nsz/client/menu_tabs/client_settings.lua")
-AddCSLuaFile("nsz/client/menu_tabs/server_settings.lua")
+AddCSLuaFile("nsz/client/menu_tabs/zone_settings.lua")
 
 AddCSLuaFile("nsz/client/vgui/button.lua")
 AddCSLuaFile("nsz/client/vgui/tab_menu.lua")
+
+AddCSLuaFile("nsz/shared/registration.lua")
+AddCSLuaFile("nsz/shared/default_zones.lua")
 
 -- Register the materials for the client to use on the hud
 resource.AddFile("materials/nsz/nsz.png")

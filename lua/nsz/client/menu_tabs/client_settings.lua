@@ -1,11 +1,18 @@
+local function makelang(setting)
+    return "#nsz.menu.clientsettings." .. setting .. "." .. nsz.clientSettings.language
+end
+
 nsz.gui.AddTab({
-    title = "Client Settings",
+    identifier = "clientsettings",
     sort = -1, -- This is intended to always be first
     CreateContent = function(parent)
+        local baseLanguageString = "#nsz.menu.clientsettings."
+        local language = nsz.clientSettings.language
+
         local enableHud = parent:Add("DCheckBoxLabel")
         enableHud:Dock(TOP)
         enableHud:DockMargin(0, 0, 0, 4)
-        enableHud:SetText("Enable HUD")
+        enableHud:SetText(makelang "enable")
         enableHud:SetFont("nsz_between")
         enableHud:SetTextColor(Color(255, 255, 255))
         enableHud:SetConVar("nsz_show_display")
@@ -15,7 +22,7 @@ nsz.gui.AddTab({
         local previewAllZones = parent:Add("DCheckBoxLabel")
         previewAllZones:Dock(TOP)
         previewAllZones:DockMargin(0, 0, 0, 12)
-        previewAllZones:SetText("Show All Zones (preview)")
+        previewAllZones:SetText(makelang "preview")
         previewAllZones:SetTextColor(Color(255, 255, 255))
         previewAllZones:SetFont("nsz_between")
         previewAllZones:SizeToContentsX()
@@ -26,7 +33,7 @@ nsz.gui.AddTab({
         end
 
         local maxZonesText = parent:Add("DLabel")
-        maxZonesText:SetText("## zones on HUD:")
+        maxZonesText:SetText(makelang "maxzones")
         maxZonesText:SetFont("nsz_between")
         maxZonesText:SetTextColor(Color(0, 0, 0, 0))
         maxZonesText:SizeToContentsX()
@@ -48,7 +55,7 @@ nsz.gui.AddTab({
         local maxZonesShown = parent:Add("DTextEntry")
         maxZonesShown:Dock(TOP)
         maxZonesShown:DockMargin(maxZonesText:GetWide(), 0, 0, 4)
-        maxZonesShown:SetPlaceholderText("# zones")
+        maxZonesShown:SetPlaceholderText(makelang "maxzonesentry")
         maxZonesShown:SetTextColor(Color(255, 255, 255))
         maxZonesShown:SetFont("nsz_between")
         maxZonesShown:SetTall(24)
@@ -76,7 +83,7 @@ nsz.gui.AddTab({
         local dockPositionLabel = parent:Add("DLabel")
         dockPositionLabel:Dock(TOP)
         dockPositionLabel:DockMargin(0, 8, 0, 2)
-        dockPositionLabel:SetText("Dock Position:")
+        dockPositionLabel:SetText(makelang "dockpos")
         dockPositionLabel:SetFont("nsz_between")
         dockPositionLabel:SetTextColor(Color(255, 255, 255))
 
@@ -344,7 +351,7 @@ nsz.gui.AddTab({
         }
 
         local dockOffsetLabel = dockPositionContainer:Add("DLabel")
-        dockOffsetLabel:SetText("Dock Offset:")
+        dockOffsetLabel:SetText(makelang "dockoffset")
         dockOffsetLabel:SetFont("nsz_between")
         dockOffsetLabel:SetTextColor(Color(255, 255, 255))
         dockOffsetLabel:SizeToContents()
@@ -352,7 +359,7 @@ nsz.gui.AddTab({
         
         local x, y = dockOffsetLabel:GetPos()
         local dockOffsetReset = dockPositionContainer:Add("NSZButton")
-        dockOffsetReset:SetText("Reset Offset")
+        dockOffsetReset:SetText(makelang "resetoffset")
         dockOffsetReset:SetColor(Color(100, 100, 100))
         dockOffsetReset:SizeToContentsX()
         dockOffsetReset:SetSize(dockOffsetReset:GetWide() + 8, 24)
@@ -494,7 +501,7 @@ nsz.gui.AddTab({
         end
 
         local dockOffsetEditByDragAndDrop = dockPositionContainer:Add("NSZButton")
-        dockOffsetEditByDragAndDrop:SetText("Edit by dragging and dropping")
+        dockOffsetEditByDragAndDrop:SetText(makelang "dragndrop")
         -- Docking ensures the width always goes to the end of the menu regardless of if the vbar is visible
         dockOffsetEditByDragAndDrop:Dock(TOP)
         dockOffsetEditByDragAndDrop:DockMargin(x, y + 48 + 8, 0, 0)
@@ -532,20 +539,27 @@ nsz.gui.AddTab({
                 end
 
                 local dock = self.tempDockPosition
+                local previewWidth = w * 0.9
+                local totalHeight = self.visibleZones * 48 + (self.visibleZones - 1) * 4
 
                 for i = 1, self.visibleZones do 
                     local y = (i - 1) * 48 + ((i - 1) * 4)
                     
                     local offsetY = 0
                     if dock > 3 and dock <= 6 then 
-                        local totalHeight = self.visibleZones * 48 + (self.visibleZones - 1) * 4
                         offsetY = h/2 - totalHeight/2
                     elseif dock > 6 and dock <= 9 then
-                        local totalHeight = self.visibleZones * 48 + (self.visibleZones - 1) * 4
                         offsetY = h - totalHeight
                     end
 
-                    draw.RoundedBox(0, 0, y + offsetY, w, 48, transparentGray)
+                    local offsetX = 0
+                    if dock == 2 or dock == 5 or dock == 8 then 
+                        offsetX = w/2 - previewWidth/2
+                    elseif dock == 3 or dock == 6 or dock == 9 then 
+                        offsetX = w - previewWidth
+                    end
+
+                    draw.RoundedBox(0, offsetX, y + offsetY, w, 48, transparentGray)
                 end
 
                 local x, y = 0, 0
@@ -983,7 +997,7 @@ nsz.gui.AddTab({
 
                 draw.RoundedBox(0, 0, 0, w, h, Color(0, 0, 0, 150))
                 draw.Text({
-                    text = "Hold LShift + click to set dock pos",
+                    text = makelang "dragedit.holdshift",
                     font = "nsz_normal",
                     pos = {4, 36},
                     yalign = TEXT_ALIGN_CENTER,
@@ -992,7 +1006,7 @@ nsz.gui.AddTab({
             end
 
             local cancel = editorControls:Add("NSZButton")
-            cancel:SetText("Cancel")
+            cancel:SetText(makelang "dragedit.cancel")
             cancel:SetSize(math.Round(editorControls:GetWide() / 2) - 2, 24)
             cancel:SetColor(Color(100, 100, 100))
             function cancel:DoClick()
@@ -1000,7 +1014,7 @@ nsz.gui.AddTab({
             end
 
             local accept = editorControls:Add("NSZButton")
-            accept:SetText("Accept")
+            accept:SetText(makelang "dragedit.accept")
             accept:SetX(cancel:GetWide() + 4)
             accept:SetSize(editorControls:GetWide() - accept:GetX(), 24)
             function accept:DoClick()
@@ -1011,7 +1025,7 @@ nsz.gui.AddTab({
         local colorEditorLabel = parent:Add("DLabel")
         colorEditorLabel:Dock(TOP)
         colorEditorLabel:DockMargin(0, 8, 0, 2)
-        colorEditorLabel:SetText("Indicator Background:")
+        colorEditorLabel:SetText(makelang "indicatorbg")
         colorEditorLabel:SetFont("nsz_between")
         colorEditorLabel:SetTextColor(Color(255, 255, 255))
 
@@ -1269,7 +1283,7 @@ nsz.gui.AddTab({
         local blurX = colorMixer:GetWide() + mixerRInput:GetWide() + 36
 
         local blurBackground = colorEditor:Add("DCheckBoxLabel")
-        blurBackground:SetText("Blur Background (if A < 255)")
+        blurBackground:SetText(makelang "blurbg")
         blurBackground:SetTextColor(Color(255, 255, 255))
         blurBackground:SetFont("nsz_between")
         blurBackground:SizeToContentsX()
@@ -1286,7 +1300,7 @@ nsz.gui.AddTab({
         blurStrength:SetMin(0.5)
         blurStrength:SetMax(5)
         blurStrength:SetDecimals(1)
-        blurStrength:SetText("Blur Strength")
+        blurStrength:SetText(makelang "blurstrength")
         blurStrength:SetDefaultValue(2)
         blurStrength:SetValue(nsz.clientSettings.background.blurStrength)
         blurStrength.Label:SetFont("nsz_between")
@@ -1305,7 +1319,7 @@ nsz.gui.AddTab({
 
         local resetSettings = buttonContainer:Add("NSZButton")
         resetSettings:SetColor(Color(100, 100, 100))
-        resetSettings:SetText("Reset to Default")
+        resetSettings:SetText(makelang "reset")
         resetSettings:SetIcon("icon16/bin_closed.png")
         resetSettings:SizeToContentsX()
         resetSettings:SetSize(resetSettings:GetWide() + 8, 24)
@@ -1318,19 +1332,19 @@ nsz.gui.AddTab({
 
         local saveSettings = buttonContainer:Add("NSZButton")
         saveSettings:SetColor(Color(0, 150, 255))
-        saveSettings:SetText("Save Settings")
+        saveSettings:SetText(makelang "save")
         saveSettings:SetIcon("icon16/disk.png")
         saveSettings:SizeToContentsX()
         saveSettings:SetSize(saveSettings:GetWide() + 8, 24)
         saveSettings:SetPos(resetSettings:GetWide() + 4, 0)
         function saveSettings:DoClick()
             nsz.SaveClientSettings()
-            self:SetText("Saved!")
+            self:SetText(makelang "saved")
             self:SetColor(Color(62, 255, 62))
             self:SetTextColor(Color(0, 0, 0))
             self:SetEnabled(false)
             timer.Simple(1, function()
-                self:SetText("Save Settings")
+                self:SetText(makelang "save")
                 self:SetColor(Color(0, 150, 255))
                 self:SetTextColor(Color(255, 255, 255))
                 self:SetEnabled(true)

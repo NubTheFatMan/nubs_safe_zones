@@ -17,6 +17,9 @@ end
 local times = {}
 local checked = 0
 local scans = 0
+local usedVector = 0
+local usedAABB = 0
+local usedSAT = 0
 util.AddNetworkString("nsz_prop_check") -- Used in the client cvar "nsz_show_zones", debug of the time it took to scan entities
 
 timer.Create("nsz_check_times", 0.5, 0, function()
@@ -31,12 +34,18 @@ timer.Create("nsz_check_times", 0.5, 0, function()
     net.Start("nsz_prop_check", true)
         net.WriteFloat(av)
         net.WriteString(tostring(checked) .. "/" .. tostring(scans))
+        net.WriteUInt(usedVector, 16)
+        net.WriteUInt(usedAABB, 16)
+        net.WriteUInt(usedSAT, 16)
     net.Broadcast()
 
     -- Reset the times and scans count
     times = {}
     checked = 0
     scans = 0
+    usedVector = 0
+    usedAABB = 0
+    usedSAT = 0
 end)
 
 -- This function returns what zones something is located in
@@ -57,31 +66,42 @@ function nsz:InZone(ent, filter)
     if #nsz.zones == 0 then return false end -- No zones exist, so it can't be in a zone
 
     local zones = {}
+    local indexes = {}
 
     for i, zone in ipairs(nsz.zones) do
         -- No need to check this zone if it's already in a zone of this type
-        if table.HasValue(zones, zone.type) then continue end
+        if table.HasValue(zones, zone.identifier) then continue end
 
         if not istable(zone.points) then continue end -- Somehow the two defining corners don't exist
         if not (isvector(zone.points[1]) or isvector(zone.points[2])) then continue end -- Invalid points
         local p1, p2 = zone.points[1], zone.points[2]
 
         if isstring(filter) then
-            if zone.type ~= typ then continue end
+            if zone.identifier ~= filter then continue end
         elseif istable(filer) and table.IsSequential(filter) then
-            if not table.HasValue(filter, zone.type) then continue end
+            if not table.HasValue(filter, zone.identifier) then continue end
         end
 
         if isvector(ent) then
+            checked = checked + 1
+            usedVector = usedVector + 1
             if ent:WithinAABox(p1, p2) then
-                if not table.HasValue(zones, zone.type) then table.insert(zones, zone.type) end
+                if not table.HasValue(zones, zone.identifier) then 
+                    table.insert(zones, zone.identifier) 
+                    table.insert(indexes, i) 
+                end
             end
             continue
         end
 
         if isentity(ent) then
+            checked = checked + 1
+            usedVector = usedVector + 1
             if ent:GetPos():WithinAABox(p1, p2) or ent:LocalToWorld(ent:OBBCenter()):WithinAABox(p1, p2) then
-                if not table.HasValue(zones, zone.type) then table.insert(zones, zone.type) end
+                if not table.HasValue(zones, zone.identifier) then 
+                    table.insert(zones, zone.identifier) 
+                    table.insert(indexes, i) 
+                end
                 continue
             end
 
@@ -103,6 +123,7 @@ function nsz:InZone(ent, filter)
             end
 
             if useAABB then -- AABB detection
+                usedAABB = usedAABB + 1
                 local min, max = ent:WorldSpaceAABB()
                 local inzone = {}
 
@@ -114,10 +135,14 @@ function nsz:InZone(ent, filter)
                 end
 
                 if inzone[1] and inzone[2] and inzone[3] then
-                    if not table.HasValue(zones, zone.type) then table.insert(zones, zone.type) end
+                    if not table.HasValue(zones, zone.identifier) then 
+                        table.insert(zones, zone.identifier) 
+                        table.insert(indexes, i) 
+                    end
                     continue
                 end
             else -- SAT (Separating Axis Theorem) detection
+                usedSAT = usedSAT + 1
                 if not istable(ent.nsz_scan) then
                     ent.nsz_scan = {corners = {}}
 
@@ -176,16 +201,17 @@ function nsz:InZone(ent, filter)
                     end
                 end
 
-                if inzone and not table.HasValue(zones, zone.type) then
-                    table.insert(zones, zone.type)
+                if inzone and not table.HasValue(zones, zone.identifier) then
+                    table.insert(zones, zone.identifier)
+                    table.insert(indexes, i)
                 end
             end
 
-            ent.nsz_scan = nil -- Remove the scan data since we want to refresh it next check.
+            -- ent.nsz_scan = nil -- Remove the scan data since we want to refresh it next check.
         end
     end
 
-    return zones
+    return zones, indexes
 end
 
 local function assignEnt(ent, ply)
@@ -246,34 +272,33 @@ hook.Add("Think", "nsz_check", function()
         if ply.nsz_lastPos == pos then continue end
         ply.nsz_lastPos = pos
 
-        checked = checked + 1
         -- Check if they are in any zone and run if they're not in the cache
-        local zones = nsz:InZone(ply)
+        local zones, indexes = nsz:InZone(ply)
         for id, info in pairs(nsz.zonetypes) do -- Loop through all the regisered zones
             if not istable(info) then continue end -- Invalid zone somewhow
 
-            if table.HasValue(zones, info.type) and not nsz.playerCache[ply][info.type] and not nsz.truePlayerCache[ply][info.type] then
+            if table.HasValue(zones, info.identifier) and not nsz.playerCache[ply][info.identifier] and not nsz.truePlayerCache[ply][info.identifier] then
                 -- Return true to block from entering a zone
-                local blockFromEntering = hook.Run("NSZRequestEnter", info.type, ply)
+                local blockFromEntering = hook.Run("NSZRequestEnter", info.identifier, ply)
                 if not isbool(blockFromEntering) then blockFromEntering = false end
 
-                ply:SetNWBool("nsz_in_zone_" .. info.type, not blockFromEntering)
-
                 if blockFromEntering then 
-                    hook.Run("NSZEntryDenied", info.type, ply)
+                    hook.Run("NSZEntryDenied", info.identifier, ply)
                 else
-                    nsz.playerCache[ply][info.type] = SysTime()
-                    hook.Run("NSZEntered", info.type, ply)
+                    nsz.playerCache[ply][info.identifier] = SysTime()
+                    ply:SetNWBool("nsz_in_zone_" .. info.identifier, true)
+                    ply:SetNWInt("nsz_zone_index_" .. info.identifier, indexes[table.KeyFromValue(zones, info.identifier)] or -1)
+                    hook.Run("NSZEntered", info.identifier, ply)
                 end
-                nsz.truePlayerCache[ply][info.type] = true
-            elseif not table.HasValue(zones, info.type) and nsz.playerCache[ply][info.type] then
-                hook.Run("NSZExit", info.type, ply, false)
+                nsz.truePlayerCache[ply][info.identifier] = true
+            elseif not table.HasValue(zones, info.identifier) and nsz.playerCache[ply][info.identifier] then
+                hook.Run("NSZExit", info.identifier, ply, false)
 
-                ply:SetNWBool("nsz_in_zone_" .. info.type, false)
-                nsz.playerCache[ply][info.type] = nil
-                nsz.truePlayerCache[ply][info.type] = nil
-            elseif not table.HasValue(zones, info.type) and nsz.truePlayerCache[ply][info.type] then
-                nsz.truePlayerCache[ply][info.type] = nil
+                ply:SetNWBool("nsz_in_zone_" .. info.identifier, false)
+                nsz.playerCache[ply][info.identifier] = nil
+                nsz.truePlayerCache[ply][info.identifier] = nil
+            elseif not table.HasValue(zones, info.identifier) and nsz.truePlayerCache[ply][info.identifier] then
+                nsz.truePlayerCache[ply][info.identifier] = nil
             end
         end
     end
@@ -332,30 +357,29 @@ hook.Add("Think", "nsz_check", function()
                     nsz.trueEntityCache[entityIndex] = {} 
                 end
 
-                checked = checked + 1
                 local zones = nsz:InZone(ent)
                 for id, info in pairs(nsz.zonetypes) do
                     if not istable(info) then continue end -- Somehow an invalid zone type
 
-                    if table.HasValue(zones, info.type) and not nsz.entityCache[entityIndex][info.type] and not nsz.trueEntityCache[entityIndex][info.type] then
-                        local blockFromEntering = hook.Run("NSZRequestEnter", info.type, ent)
+                    if table.HasValue(zones, info.identifier) and not nsz.entityCache[entityIndex][info.identifier] and not nsz.trueEntityCache[entityIndex][info.identifier] then
+                        local blockFromEntering = hook.Run("NSZRequestEnter", info.identifier, ent)
                         if not isbool(blockFromEntering) then blockFromEntering = false end
 
                         if blockFromEntering then 
-                            hook.Run("NSZEntryDenied", info.type, ent)
+                            hook.Run("NSZEntryDenied", info.identifier, ent)
                         else
-                            nsz.entityCache[entityIndex][info.type] = SysTime()
-                            hook.Run("NSZEntered", info.type, ent)
+                            nsz.entityCache[entityIndex][info.identifier] = SysTime()
+                            hook.Run("NSZEntered", info.identifier, ent)
                         end
-                        nsz.trueEntityCache[entityIndex][info.type] = true
-                    elseif not table.HasValue(zones, info.type) and nsz.entityCache[entityIndex][info.type] then
-                        hook.Run("NSZExit", info.type, ent, false)
-                        hook.Run("EntityZoneLeave", ent, info.type)
+                        nsz.trueEntityCache[entityIndex][info.identifier] = true
+                    elseif not table.HasValue(zones, info.identifier) and nsz.entityCache[entityIndex][info.identifier] then
+                        hook.Run("NSZExit", info.identifier, ent, false)
+                        hook.Run("EntityZoneLeave", ent, info.identifier)
 
-                        nsz.entityCache[entityIndex][info.type] = nil
-                        nsz.trueEntityCache[entityIndex][info.type] = nil
-                    elseif not table.HasValue(zones, info.type) and nsz.trueEntityCache[entityIndex][info.type] then 
-                        nsz.trueEntityCache[entityIndex][info.type] = nil
+                        nsz.entityCache[entityIndex][info.identifier] = nil
+                        nsz.trueEntityCache[entityIndex][info.identifier] = nil
+                    elseif not table.HasValue(zones, info.identifier) and nsz.trueEntityCache[entityIndex][info.identifier] then 
+                        nsz.trueEntityCache[entityIndex][info.identifier] = nil
                     end
                 end
             end

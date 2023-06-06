@@ -26,8 +26,8 @@ function TOOL:Deploy(forceDeploy)
         if not istable(nsz.currentZone.points) then
             nsz.currentZone.points = {}
         end
-        if not isstring(nsz.currentZone.type) then 
-            nsz.currentZone.type = ""
+        if not isstring(nsz.currentZone.identifier) then 
+            nsz.currentZone.identifier = ""
         end
     end
 end
@@ -35,7 +35,7 @@ end
 function TOOL:LeftClick()
     if not istable(nsz.currentZone) then self:Deploy(true) end
     if CLIENT and LocalPlayer() == self.Owner and IsFirstTimePredicted() then 
-        if not istable(nsz.zonetypes[nsz.currentZone.type]) then 
+        if not istable(nsz.zonetypes[nsz.currentZone.identifier]) then 
             return chat.AddText("NSZ Error: Invalid zone type selected. Please select a zone from the spawn menu.")
         end
 
@@ -91,7 +91,7 @@ function TOOL.BuildCPanel(panel)
     end
     function comboBox:OnSelect(index, value)
         if not istable(nsz.currentZone) then TOOL:Deploy(true) end
-        nsz.currentZone.type = value
+        nsz.currentZone.identifier = value
         language.Add("tool.zone_creator.0", "Placing zone: " .. value)
     end
 

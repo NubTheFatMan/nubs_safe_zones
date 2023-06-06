@@ -9,7 +9,7 @@ Safe Zone mod for Garry's Mod. This was developed a while ago, but I never actua
 * `nsz_show_zones (0|1)` - Shows a debug of all the current zones and how long it took to scan props during every tick.
 * `nsz_show_display (0|1)` - Shows or hides the "you are in zone" indicator.
 * `nsz_delete <zone ID>` - Deletes a zone by ID. SuperAdmin only be default, however has ULX permission support. You can get a zone ID by using the console command `nsz_show_zones`
-* `nsz_gui` - Opens the GUI for the mod. Will eventually be moved to an umbrella command, `nsz` with argument `gui`.
+* `nsz_gui` - Opens the GUI for the mod.
 # Server Console Commands and Variables
 * `nsz_prop_checks_per_tick <# props>` - How many props to check per server tick. Higher number = more lag, but faster detection. Default is 50.
 * `nsz_aabb_v_sat_sensitivity <sensitivity>` - Range of 0 to 90. This is the angle which determines whether to use AABB (Axis Aligned Bounding Box) detection or SAT (Separating Axis Theorem) detection. 0 = always use SAT (slow but accurate), 90 = always use AABB (fast with false positives). Default is 10.
@@ -40,16 +40,19 @@ These are features that were in Upcoming Changes listed below, however have been
         `nsz:InZoneCache(Entity/Player ent, string/table zoneFilter)` | Checks the cache for the `ent`. | Returns a `boolean` of whether or not the `ent` is in the `zoneFilter`.
         `nsz:KickFromZone(Entity/Player ent, string/table zoneFilter)` | Kicks the ent from any of the supplied zones in `zoneFilter`. | Returns `nil`
         (Internal) `nsz:GetZonesTable(Entity/Player ent)` | Gets the modifiable cache table for the `ent`. | Returns a `table` formatted as `table[zoneIdentifer] = timeEnteredZone`.
+* New basic language support. I'm not very happy with it, but it works. Might revise it in the future.
+* If both client convars `nsz_show_zones` and `nsz_show_display` are set to 1, the zone ID will now appear on the zone display. Due to optimizations, it only shows the first zone ID you enter, and doesn't update until you leave all zones of that type.
+* `nsz:RegisterZone()` function has been revised. Arguments have been reordered to be more intuitive as well as the first argument can just be a table with the zone data. 
+* `nsz_show_zones` debug text now has a more accurate checked/total scan count, as well as how many used Vector, AABB, and SAT detection.
 
 
 # Upcoming Changes
 I'm planning on revisiting this in the near future and making a few changes. Once these changes are made, I'll update it on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2553024572).
 * Address the bugs mentioned above.
-* Add an alternative method for getting a zone ID for instances where the player can't get to the center to see it.
-* In the `nsz:RegisterZone()` function, I want to add support for the first argument to just be a table with all the parameters in no particular order thanks to indexing.
 * Add a variable for no pvp zones that will allow a player back into a zone if they haven't died since they left.
-* Expand on `nsz_show_zones` debug GUI to give more information. Mainly how many props used AABB vs SAT detection.
-* Add language support.
+* For the steam workshop, figure out why the materials aren't sending to the client if the server isn't using this github repo.
+
+# Cut Changes
+These were things I wrote down that I wanted to do, but I don't want to let scope creep catch up to me as well as they just aren't the most necessary.
 * Add a zone preview and even placing multiple zones before uploading to the server.
 * I'd like to figure out a way to optimize nearby/intersecting zones by merging them with the feature above. This may be cut.
-* For the steam workshop, figure out why the materials aren't sending to the client if the server isn't using this github repo.

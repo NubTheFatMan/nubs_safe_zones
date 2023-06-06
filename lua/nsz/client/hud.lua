@@ -17,9 +17,15 @@ surface.CreateFont("nsz_normal", {
 
 local time = 0
 local scanCount = 0
+local usedVector = 0
+local usedAABB = 0
+local usedSAT = 0
 net.Receive("nsz_prop_check", function()
     time = net.ReadFloat()
     scanCount = net.ReadString()
+    usedVector = net.ReadUInt(16)
+    usedAABB = net.ReadUInt(16)
+    usedSAT = net.ReadUInt(16)
 end)
 
 nsz.previewAllZones = false
@@ -33,18 +39,25 @@ hook.Add("HUDPaint", "nsz_show_in_zone", function()
     if GetConVar("nsz_show_zones"):GetInt() > 0 then
         if isnumber(time) then
             local text = "NSZ: Average check duration: " .. tostring(math.Round(time * 1000, 2)) .. " ms (" .. scanCount .. " possible scans)"
-            draw.Text({ -- This is a backdrop, creates a shade to the text
-                text = text,
-                pos = {6, 6},
-                font = font_large,
-                color = Color(0, 0, 0)
-            })
-            draw.Text({
-                text = text,
-                pos = {4, 4},
-                font = font_large,
-                color = Color(255, 255, 255)
-            })
+            text = text .. "\nVector scans (early exit optimization): " .. tostring(usedVector)
+            text = text .. "\nAABB scans: " .. tostring(usedAABB)
+            text = text .. "\nSAT scans: " .. tostring(usedSAT)
+            draw.DrawText(text, font_large, 6, 6, Color(0, 0, 0))
+            draw.DrawText(text, font_large, 4, 4, Color(255, 255, 255))
+            -- draw.Text({ -- This is a backdrop, creates a shade to the text
+            --     text = text,
+            --     pos = {6, 6},
+            --     font = font_large,
+            --     color = Color(0, 0, 0)
+            -- })
+            -- draw.Text({
+            --     text = text,
+            --     pos = {4, 4},
+            --     font = font_large,
+            --     color = Color(255, 255, 255)
+            -- })
+
+            -- local aabbScans = 
         end
     end
 
@@ -58,9 +71,9 @@ hook.Add("HUDPaint", "nsz_show_in_zone", function()
             end
         else 
             for id, zone in pairs(nsz.zonetypes) do
-                if icons[zone.type] == nil then icons[zone.type] = Material(zone.icon) end
-                if not isstring(zone.type) then continue end
-                if LocalPlayer():GetNWBool("nsz_in_zone_" .. zone.type) and not table.HasValue(zones, zone.type) then table.insert(zones, zone.type) end
+                if icons[zone.identifier] == nil then icons[zone.identifier] = Material(zone.icon) end
+                if not isstring(zone.identifier) then continue end
+                if LocalPlayer():GetNWBool("nsz_in_zone_" .. zone.identifier) and not table.HasValue(zones, zone.identifier) then table.insert(zones, zone.identifier) end
                 if #zones >= nsz.clientSettings.visibleZones then break end
             end
         end
@@ -69,20 +82,40 @@ hook.Add("HUDPaint", "nsz_show_in_zone", function()
             local w = 52 -- The icon takes up 40 px. The rest is padding
             local h = 48
 
+            local debugEnabled = GetConVar("nsz_show_zones"):GetInt() > 0
+
             local titles = {}
             surface.SetFont(font_large)
             for i, zone in ipairs(zones) do
-                if not isstring(nsz.zonetypes[zone].title) then continue end
-                local wid = surface.GetTextSize(nsz.zonetypes[zone].title)
+                local title
+                if isstring(nsz.zonetypes[zone].title) then title = nsz.zonetypes[zone].title 
+                else title = "#nsz.zones." .. zone .. ".title." .. nsz.clientSettings.language end
+                local wid = surface.GetTextSize(title)
                 table.insert(titles, wid)
             end
             titles = math.max(unpack(titles))
 
+            local idWidth = 0
+            if debugEnabled then 
+                -- surface.SetFont(font_large)
+                local debugs = {}
+                for i, zone in ipairs(zones) do
+                    local text = "[" .. tostring(LocalPlayer():GetNWInt("nsz_zone_index_" .. zone)) .. "]"
+                    local width = surface.GetTextSize(text)
+                    table.insert(debugs, width)
+                end
+                idWidth = math.max(unpack(debugs)) + 4
+                w = w + idWidth
+                -- w = w + width
+            end
+
             local subtitles = {}
             surface.SetFont(font_normal)
             for i, zone in ipairs(zones) do
-                if not isstring(nsz.zonetypes[zone].subtitle) then continue end
-                local wid = surface.GetTextSize(nsz.zonetypes[zone].subtitle)
+                local subtitle
+                if isstring(nsz.zonetypes[zone].subtitle) then subtitle = nsz.zonetypes[zone].subtitle 
+                else subtitle = "#nsz.zones." .. zone .. ".subtitle." .. nsz.clientSettings.language end
+                local wid = surface.GetTextSize(subtitle)
                 table.insert(subtitles, wid)
             end
             subtitles = math.max(unpack(subtitles))
@@ -105,24 +138,40 @@ hook.Add("HUDPaint", "nsz_show_in_zone", function()
                 draw.RoundedBox(0, x, y, w, h, nsz.clientSettings.background.color)
 
                 surface.SetDrawColor(255, 255, 255)
-                surface.SetMaterial(icons[zone.type])
+                surface.SetMaterial(icons[zone.identifier])
                 surface.DrawTexturedRect(x + 4, y + 4, h - 8, h - 8)
 
-                local title = zone.title
-                -- if GetConVar("nsz_show_zones"):GetInt() > 0 then 
-                --     title = title .. " [" .. zone.id .. "]"
-                -- end
+                local title
+                if isstring(nsz.zonetypes[zoneType].title) then title = nsz.zonetypes[zoneType].title 
+                else title = "#nsz.zones." .. zoneType .. ".title." .. nsz.clientSettings.language end
+
+                local subtitle
+                if isstring(nsz.zonetypes[zoneType].subtitle) then subtitle = nsz.zonetypes[zoneType].subtitle 
+                else subtitle = "#nsz.zones." .. zoneType .. ".subtitle." .. nsz.clientSettings.language end
+                if debugEnabled then 
+                    -- surface.SetFont(font_large)
+                    local text = "[" .. tostring(LocalPlayer():GetNWInt("nsz_zone_index_" .. zoneType)) .. "]"
+                    -- local width = surface.GetTextSize(text)
+                    -- draw.RoundedBox(0, x + w, y, width + 8, h, nsz.clientSettings.background.color)
+                    draw.Text({
+                        text = text,
+                        font = font_large,
+                        pos = {x + w - 4, y + 4},
+                        xalign = TEXT_ALIGN_RIGHT,
+                        color = zone.color
+                    })
+                end
                 draw.Text({
                     text = title,
                     font = font_large,
-                    pos = {x + w - txtw/2 - 4, y + 4},
+                    pos = {x + w - txtw/2 - 4 - idWidth, y + 4},
                     xalign = TEXT_ALIGN_CENTER,
                     color = zone.color
                 })
                 draw.Text({
-                    text = zone.subtitle,
+                    text = subtitle,
                     font = font_normal,
-                    pos = {x + w - txtw/2 - 4, y + 30},
+                    pos = {x + w - txtw/2 - 4 - idWidth, y + 30},
                     xalign = TEXT_ALIGN_CENTER,
                     color = Color(255, 255, 255)
                 })
@@ -152,24 +201,20 @@ hook.Add("PostDrawOpaqueRenderables", "nsz_render_zones", function()
                 math.abs(p2[3] - center[3])
             )
 
-            local col = Color(255, 255, 255)
-            if istable(nsz.zonetypes[zone.type]) then
-                local z = table.Copy(nsz.zonetypes[zone.type])
-                if IsColor(z.color) then
-                    col = z.color
-                end
-            end
+            local zoneData = nsz.zonetypes[zone.identifier] or nsz.NULL_ZONE
+            local white = Color(255, 255, 255)
+            
             -- Wireframe box
             local ang = Angle(0, 0, 0)
-            render.DrawWireframeBox(center, ang, -min, max, col)
+            render.DrawWireframeBox(center, ang, -min, max, zoneData.color)
 
             -- Colored box with the wireframe as a visible edge
             render.SetColorMaterial()
-            render.DrawBox(center, ang, -min, max, Color(col.r, col.g, col.b, 15))
+            render.DrawBox(center, ang, -min, max, Color(zoneData.color.r, zoneData.color.g, zoneData.color.b, 15))
 
             if istable(zone.corners) then
                 for x, p in ipairs(zone.corners) do
-                    render.DrawWireframeSphere(p, 1, 10, 10, col)
+                    render.DrawWireframeSphere(p, 1, 10, 10, zoneData.color)
                 end
             end
 
@@ -193,17 +238,41 @@ hook.Add("PostDrawOpaqueRenderables", "nsz_render_zones", function()
 
             cam.Start3D2D(trace.HitPos, angle, 0.25)
                 local text = "Zone " .. tostring(i)
+                local title = isstring(zoneData.title) and zoneData.title or "#nsz.zones." .. zoneData.identifier .. ".title." .. nsz.clientSettings.language
+                local subtitle = isstring(zoneData.subtitle) and zoneData.subtitle or "#nsz.zones." .. zoneData.identifier .. ".subtitle." .. nsz.clientSettings.language
+
                 local font = "nsz_large"
+                local subfont = "nsz_normal"
+
+                local totalWidth, totalHeight = 8, 8
 
                 surface.SetFont(font)
-                local tW, tH = surface.GetTextSize(text)
+                local zoneIDWidth, zoneIDHeight = surface.GetTextSize(text)
+                local titleWidth, titleHeight = surface.GetTextSize(title)
 
-                local pad = 5
+                surface.SetFont(subfont)
+                local subtextWidth, subtextHeight = surface.GetTextSize(subtitle)
 
-                surface.SetDrawColor(100, 100, 100, 255)
-                surface.DrawRect(-tW / 2 - pad, -pad, tW + pad * 2, tH + pad * 2)
+                local zonetypeWidth, zonetypeHeight = 0, 0
+                local idText
+                if zoneData == nsz.NULL_ZONE then 
+                    idText = "\"" .. tostring(zone.identifier or zone.type) .. "\""
+                    zonetypeWidth, zonetypeHeight = surface.GetTextSize(idText)
+                end
 
-                draw.SimpleText(text, font, -tW / 2, 0, col)
+                totalWidth = totalWidth + math.max(zoneIDWidth, titleWidth, subtextWidth, zonetypeWidth)
+                totalHeight = totalHeight + zoneIDHeight + titleHeight + subtextHeight + zonetypeHeight
+                local x, y = -totalWidth/2, -totalHeight/2
+
+                surface.SetDrawColor(62, 62, 62)
+                surface.DrawRect(x, y, totalWidth, totalHeight)
+                draw.SimpleText(text, font, 0, y + 4, white, TEXT_ALIGN_CENTER)
+                draw.SimpleText(title, font, 0, y + 4 + zoneIDHeight, zoneData.color, TEXT_ALIGN_CENTER)
+                draw.SimpleText(subtitle, subfont, 0, y + 4 + zoneIDHeight + titleHeight, white, TEXT_ALIGN_CENTER)
+                
+                if isstring(idText) then
+                    draw.SimpleText(idText, subfont, 0, y + 4 + zoneIDHeight + titleHeight + subtextHeight, white, TEXT_ALIGN_CENTER)
+                end
             cam.End3D2D()
         end
     end
@@ -241,9 +310,9 @@ hook.Add("PostDrawOpaqueRenderables", "nsz_render_zones", function()
 
         local col = Color(255, 255, 255)
         local ang = Angle(0, 0, 0)
-        if istable(nsz.zonetypes) and istable(nsz.zonetypes[zone.type]) then
-            if IsColor(nsz.zonetypes[zone.type].color) then
-                col = nsz.zonetypes[zone.type].color
+        if istable(nsz.zonetypes) and istable(nsz.zonetypes[zone.identifier]) then
+            if IsColor(nsz.zonetypes[zone.identifier].color) then
+                col = nsz.zonetypes[zone.identifier].color
             end
         end
         render.DrawWireframeBox(center, ang, -min, max, col)
