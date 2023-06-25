@@ -1,17 +1,43 @@
 local function makelang(setting)
-    return "#nsz.menu.clientsettings." .. setting .. "." .. nsz.clientSettings.language
+    return nsz.language.GetPhrase("menu.clientsettings." .. setting)
 end
 
 nsz.gui.AddTab({
     identifier = "clientsettings",
     sort = -1, -- This is intended to always be first
     CreateContent = function(parent)
-        local baseLanguageString = "#nsz.menu.clientsettings."
-        local language = nsz.clientSettings.language
+        local languageText = parent:Add("DLabel")
+        languageText:SetText(makelang "languagepick")
+        languageText:SetFont("nsz_between")
+        languageText:SetTextColor(Color(0, 0, 0, 0))
+        languageText:SizeToContentsX()
+        languageText:SetWide(languageText:GetWide() + 8)
+        languageText:SetTall(24)
+        languageText:SetPos(4, 4)
+        function languageText:Paint(w, h)
+            draw.RoundedBox(0, 0, 0, w, h, Color(0, 0, 0, 150))
+            draw.SimpleText(self:GetText(), self:GetFont(), w/2, h/2, Color(255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+
+        if nsz.clientSettings.secrethehe and not table.HasValue(nsz.language.Languages, "Forbidden") then 
+            table.insert(nsz.language.Languages, "Forbidden")
+        end
+        local languageSelect = parent:Add("NSZComboBox")
+        languageSelect:Dock(TOP)
+        languageSelect:DockMargin(languageText:GetWide(), 0, 0, 4)
+        languageSelect:SetTall(24)
+        for i, language in ipairs(nsz.language.Languages) do 
+            languageSelect:AddChoice(language, nil, nsz.clientSettings.language == language)
+        end
+        function languageSelect:OnSelect(index, value)
+            nsz.clientSettings.language = value
+            nsz.ApplyLanguageToTool()
+            nsz.gui.Open()
+        end
 
         local enableHud = parent:Add("DCheckBoxLabel")
         enableHud:Dock(TOP)
-        enableHud:DockMargin(0, 0, 0, 4)
+        enableHud:DockMargin(0, 4, 0, 4)
         enableHud:SetText(makelang "enable")
         enableHud:SetFont("nsz_between")
         enableHud:SetTextColor(Color(255, 255, 255))
@@ -21,7 +47,7 @@ nsz.gui.AddTab({
 
         local previewAllZones = parent:Add("DCheckBoxLabel")
         previewAllZones:Dock(TOP)
-        previewAllZones:DockMargin(0, 0, 0, 12)
+        previewAllZones:DockMargin(0, 0, 0, 8)
         previewAllZones:SetText(makelang "preview")
         previewAllZones:SetTextColor(Color(255, 255, 255))
         previewAllZones:SetFont("nsz_between")
@@ -39,7 +65,7 @@ nsz.gui.AddTab({
         maxZonesText:SizeToContentsX()
         maxZonesText:SetWide(maxZonesText:GetWide() + 8)
         maxZonesText:SetTall(24)
-        maxZonesText:SetPos(4, 60)
+        maxZonesText:SetPos(4, 88)
         function maxZonesText:Paint(w, h)
             draw.RoundedBox(0, 0, 0, w, h, Color(0, 0, 0, 150))
             draw.Text({ -- Drawing text centered instead of aligned to left

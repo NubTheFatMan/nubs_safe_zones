@@ -20,12 +20,16 @@ local scanCount = 0
 local usedVector = 0
 local usedAABB = 0
 local usedSAT = 0
+local ticks = 0
 net.Receive("nsz_prop_check", function()
+    if GetConVar("nsz_show_zones"):GetInt() <= 0 then return end
+
     time = net.ReadFloat()
     scanCount = net.ReadString()
     usedVector = net.ReadUInt(16)
     usedAABB = net.ReadUInt(16)
     usedSAT = net.ReadUInt(16)
+    ticks = net.ReadUInt(8)
 end)
 
 nsz.previewAllZones = false
@@ -38,26 +42,26 @@ hook.Add("HUDPaint", "nsz_show_in_zone", function()
     -- This is text that shows on screen for the debug
     if GetConVar("nsz_show_zones"):GetInt() > 0 then
         if isnumber(time) then
-            local text = "NSZ: Average check duration: " .. tostring(math.Round(time * 1000, 2)) .. " ms (" .. scanCount .. " possible scans)"
-            text = text .. "\nVector scans (early exit optimization): " .. tostring(usedVector)
-            text = text .. "\nAABB scans: " .. tostring(usedAABB)
-            text = text .. "\nSAT scans: " .. tostring(usedSAT)
-            draw.DrawText(text, font_large, 6, 6, Color(0, 0, 0))
-            draw.DrawText(text, font_large, 4, 4, Color(255, 255, 255))
-            -- draw.Text({ -- This is a backdrop, creates a shade to the text
-            --     text = text,
-            --     pos = {6, 6},
-            --     font = font_large,
-            --     color = Color(0, 0, 0)
-            -- })
-            -- draw.Text({
-            --     text = text,
-            --     pos = {4, 4},
-            --     font = font_large,
-            --     color = Color(255, 255, 255)
-            -- })
-
-            -- local aabbScans = 
+            local texts = {
+                nsz.language.GetPhrase("hud.debug.averagecheck"),
+                nsz.language.GetPhrase("hud.debug.vectorscans"),
+                nsz.language.GetPhrase("hud.debug.aabbscans"),
+                nsz.language.GetPhrase("hud.debug.satscans")
+            }
+            
+            local matchTable = {
+                ["$averagetime"] = tostring(math.Round(time * 1000, 2)),
+                ["$scans"]       = scanCount,
+                ["$ticks"]       = ticks,
+                ["$vectorscans"] = usedVector,
+                ["$aabbscans"]   = usedAABB,
+                ["$satscans"]    = usedSAT
+            }
+            for i, text in ipairs(texts) do 
+                local modifiedText = string.gsub(text, "$%a+", matchTable)
+                draw.SimpleText(modifiedText, font_large, 6, 6 + (i - 1) * 24, Color(0, 0, 0))
+                draw.SimpleText(modifiedText, font_large, 4, 4 + (i - 1) * 24, Color(255, 255, 255))
+            end
         end
     end
 
@@ -89,7 +93,7 @@ hook.Add("HUDPaint", "nsz_show_in_zone", function()
             for i, zone in ipairs(zones) do
                 local title
                 if isstring(nsz.zonetypes[zone].title) then title = nsz.zonetypes[zone].title 
-                else title = "#nsz.zones." .. zone .. ".title." .. nsz.clientSettings.language end
+                else title = nsz.language.GetPhrase("zones." .. zone .. ".title") end
                 local wid = surface.GetTextSize(title)
                 table.insert(titles, wid)
             end
@@ -114,7 +118,7 @@ hook.Add("HUDPaint", "nsz_show_in_zone", function()
             for i, zone in ipairs(zones) do
                 local subtitle
                 if isstring(nsz.zonetypes[zone].subtitle) then subtitle = nsz.zonetypes[zone].subtitle 
-                else subtitle = "#nsz.zones." .. zone .. ".subtitle." .. nsz.clientSettings.language end
+                else subtitle = nsz.language.GetPhrase("zones." .. zone .. ".subtitle") end
                 local wid = surface.GetTextSize(subtitle)
                 table.insert(subtitles, wid)
             end
@@ -143,11 +147,11 @@ hook.Add("HUDPaint", "nsz_show_in_zone", function()
 
                 local title
                 if isstring(nsz.zonetypes[zoneType].title) then title = nsz.zonetypes[zoneType].title 
-                else title = "#nsz.zones." .. zoneType .. ".title." .. nsz.clientSettings.language end
+                else title = nsz.language.GetPhrase("zones." .. zoneType .. ".title") end
 
                 local subtitle
                 if isstring(nsz.zonetypes[zoneType].subtitle) then subtitle = nsz.zonetypes[zoneType].subtitle 
-                else subtitle = "#nsz.zones." .. zoneType .. ".subtitle." .. nsz.clientSettings.language end
+                else subtitle = nsz.language.GetPhrase("zones." .. zoneType .. ".subtitle") end
                 if debugEnabled then 
                     -- surface.SetFont(font_large)
                     local text = "[" .. tostring(LocalPlayer():GetNWInt("nsz_zone_index_" .. zoneType)) .. "]"
@@ -237,9 +241,9 @@ hook.Add("PostDrawOpaqueRenderables", "nsz_render_zones", function()
             angle:RotateAroundAxis(angle:Forward(), 90)
 
             cam.Start3D2D(trace.HitPos, angle, 0.25)
-                local text = "Zone " .. tostring(i)
-                local title = isstring(zoneData.title) and zoneData.title or "#nsz.zones." .. zoneData.identifier .. ".title." .. nsz.clientSettings.language
-                local subtitle = isstring(zoneData.subtitle) and zoneData.subtitle or "#nsz.zones." .. zoneData.identifier .. ".subtitle." .. nsz.clientSettings.language
+                local text = nsz.language.GetPhrase("zones.index") .. tostring(i)
+                local title = isstring(zoneData.title) and zoneData.title or nsz.language.GetPhrase("zones." .. zoneData.identifier .. ".title")
+                local subtitle = isstring(zoneData.subtitle) and zoneData.subtitle or nsz.language.GetPhrase("zones." .. zoneData.identifier .. ".subtitle")
 
                 local font = "nsz_large"
                 local subfont = "nsz_normal"

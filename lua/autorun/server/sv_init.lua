@@ -24,6 +24,8 @@ AddCSLuaFile("nsz/client/menu_tabs/client_settings.lua")
 AddCSLuaFile("nsz/client/menu_tabs/zone_settings.lua")
 
 AddCSLuaFile("nsz/client/vgui/button.lua")
+AddCSLuaFile("nsz/client/vgui/combobox.lua")
+AddCSLuaFile("nsz/client/vgui/label.lua")
 AddCSLuaFile("nsz/client/vgui/tab_menu.lua")
 
 AddCSLuaFile("nsz/shared/registration.lua")

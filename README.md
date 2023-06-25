@@ -11,11 +11,10 @@ Safe Zone mod for Garry's Mod. This was developed a while ago, but I never actua
 * `nsz_delete <zone ID>` - Deletes a zone by ID. SuperAdmin only be default, however has ULX permission support. You can get a zone ID by using the console command `nsz_show_zones`
 * `nsz_gui` - Opens the GUI for the mod.
 # Server Console Commands and Variables
-* `nsz_prop_checks_per_tick <# props>` - How many props to check per server tick. Higher number = more lag, but faster detection. Default is 50.
+* `nsz_prop_checks_per_tick <# props>` - How many props to check per server tick. Higher number = more lag, but faster detection. If this number is too low, props dragged between lines of the same zone may flicker out and back into the zone. Default is 50.
 * `nsz_aabb_v_sat_sensitivity <sensitivity>` - Range of 0 to 90. This is the angle which determines whether to use AABB (Axis Aligned Bounding Box) detection or SAT (Separating Axis Theorem) detection. 0 = always use SAT (slow but accurate), 90 = always use AABB (fast with false positives). Default is 10.
 # Bugs
-Please note that I'm not currently working on this mod anymore, so no plans on fixing these are coming any time soon.
-1. If two zones of the same type are next to each other, and you drag a prop through the line between them, the prop will flicker out and back into the zone.
+1. If two zones of the same type are next to each other, and you drag a prop through the line between them, the prop will flicker out and back into the zone. There is no good fix for this. The flicker occurs if the `nsz_prop_checks_per_tick` isn't high enough.
 2. If all zones are removed, any entities in a zone will remain marked in the zones they were in until another zone is created.
 
 # Completed Features
@@ -40,16 +39,17 @@ These are features that were in Upcoming Changes listed below, however have been
         `nsz:InZoneCache(Entity/Player ent, string/table zoneFilter)` | Checks the cache for the `ent`. | Returns a `boolean` of whether or not the `ent` is in the `zoneFilter`.
         `nsz:KickFromZone(Entity/Player ent, string/table zoneFilter)` | Kicks the ent from any of the supplied zones in `zoneFilter`. | Returns `nil`
         (Internal) `nsz:GetZonesTable(Entity/Player ent)` | Gets the modifiable cache table for the `ent`. | Returns a `table` formatted as `table[zoneIdentifer] = timeEnteredZone`.
-* New basic language support. I'm not very happy with it, but it works. Might revise it in the future.
 * If both client convars `nsz_show_zones` and `nsz_show_display` are set to 1, the zone ID will now appear on the zone display. Due to optimizations, it only shows the first zone ID you enter, and doesn't update until you leave all zones of that type.
 * `nsz:RegisterZone()` function has been revised. Arguments have been reordered to be more intuitive as well as the first argument can just be a table with the zone data. 
 * `nsz_show_zones` debug text now has a more accurate checked/total scan count, as well as how many used Vector, AABB, and SAT detection.
+* Language support has been implemented, will need to create documentation at some point
+* Credits page
 
 
 # Upcoming Changes
 I'm planning on revisiting this in the near future and making a few changes. Once these changes are made, I'll update it on the [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=2553024572).
-* Address the bugs mentioned above.
-* Add a variable for no pvp zones that will allow a player back into a zone if they haven't died since they left.
+* Add a variable for no pvp zones that will allow a player back into a zone if they haven't died since they left. (started)
+* `server/concmds.lua` still needs language support.
 * For the steam workshop, figure out why the materials aren't sending to the client if the server isn't using this github repo.
 
 # Cut Changes

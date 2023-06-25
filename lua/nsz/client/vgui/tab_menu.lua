@@ -32,8 +32,29 @@ function NSZTabMenu:Init()
 
     self.scrollPanel = vgui.Create("DScrollPanel", self)
     self.scrollPanel:Dock(FILL)
-    function self.scrollPanel:Paint(w, h) end
+    self.scrollPanel.tabmenu = self
+    function self.scrollPanel:Paint(w, h)
+        if self.tabmenu.selectedTab == NULL then 
+            draw.SimpleText(nsz.language.GetPhrase("tab.select"), "nsz_large", w/2, h/2, Color(255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+        end
+    end
     self.scrollPanel:GetCanvas():DockPadding(4, 4, 4, 4)
+
+    local vbar = self.scrollPanel:GetVBar()
+    function vbar:Paint(w, h)
+        draw.RoundedBox(0, 0, 0, w, h, Color(0, 0, 0, 100))
+    end
+    function vbar.btnUp:Paint(w, h)
+        draw.RoundedBox(0, 0, 0, w, h, Color(0, 0, 0, 100))
+    end
+    function vbar.btnDown:Paint(w, h)
+        draw.RoundedBox(0, 0, 0, w, h, Color(0, 0, 0, 100))
+    end
+    function vbar.btnGrip:Paint(w, h)
+        draw.RoundedBox(0, 0, 0, w, h, Color(0, 0, 0, 100))
+        draw.RoundedBox(0, 0, 0, w, 1, Color(255, 255, 255))
+        draw.RoundedBox(0, 0, h-1, w, 1, Color(255, 255, 255))
+    end
 end
 
 function NSZTabMenu:GetCanvas() return self.scrollPanel:GetCanvas() end

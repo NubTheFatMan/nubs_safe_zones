@@ -11,6 +11,8 @@ function NSZButton:Init()
     self.color.shadow   = nsz.ShiftColor(self.color.normal, -50)
     self.color.disabled = nsz.ShiftColor(self.color.normal, -15)
 
+    self.padding = 4
+
     self.icon = nil
 
     self.buttonSounds = {
@@ -44,15 +46,16 @@ function NSZButton:GetTextSize()
     return w, h
 end
 function NSZButton:SizeToContents()
-    self:SetSize(self:GetTextSize())
+    local w, h = self:GetTextSize()
+    self:SetSize(w + self.padding * 2, h + self.padding * 2)
 end
 function NSZButton:SizeToContentsX()
     local w, _ = self:GetTextSize()
-    self:SetWide(w)
+    self:SetWide(w + self.padding * 2)
 end
 function NSZButton:SizeToContentsY()
     local _, h = self:GetTextSize()
-    self:SetTall(h)
+    self:SetTall(h + self.padding * 2)
 end
 
 function NSZButton:SetColor(color)

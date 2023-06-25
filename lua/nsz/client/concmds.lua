@@ -26,3 +26,7 @@ net.Receive("nsz_download", function()
     nsz.zonetypes = net.ReadTable()
     nsz.zoneSettings = net.ReadTable()
 end)
+
+net.Receive("nsz_send_message", function()
+    chat.AddText(nsz.language.GetPhrase(net.ReadString()))
+end)

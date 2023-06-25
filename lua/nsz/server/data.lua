@@ -1,6 +1,20 @@
 -- Networking string for saving a new zone
 util.AddNetworkString("nsz_upload") -- Used when a player uploads coords to be a safezone
 util.AddNetworkString("nsz_download") -- Sends zones to the player so they can view the safezones with `nsz_toggle_zones`
+util.AddNetworkString("nsz_send_message") -- Used for the server to send a localized language response to the client
+
+util.AddNetworkString("nsz_request_zone_settings") -- Used by the client to request zone settings from the server
+util.AddNetworkString("nsz_zone_settings") -- With the network string above, the server responds to the requesting client with this channel
+
+function nsz.SendLocalizedMessage(player, identifier)
+    if not isentity(player) then error("Bad argument #1: Expected a player, got " .. type(player)) end
+    if not player:IsPlayer() then error("Bad argument #1: Expected a player, got " .. type(player)) end
+    if not isstring(identifier) then error("Bad argument #2: Expected a string, got " .. type(identifier)) end
+
+    net.Start("nsz_send_message")
+        net.WriteString(identifier)
+    net.Send(player)
+end
 
 -- Create the data files
 if not file.Exists("nubs_safe_zone", "DATA") then
@@ -72,6 +86,30 @@ function nsz.SaveZoneSettings()
     file.Write("nubs_safe_zone/zonesettings.txt", util.TableToJSON(nsz.zoneSettings))
 end
 
+net.Receive("nsz_request_zone_settings", function(length, ply)
+    local can
+    if ULib ~= nil then 
+        can = ULib.ucl.query(ply, "Manage Zone Settings")
+    else
+        can = ply:IsSuperAdmin()
+    end
+
+    net.Start("nsz_zone_settings")
+    net.WriteBool(can)
+
+    if can then 
+        net.WriteTable(nsz.zoneSettings)
+        local rawZoneSettings = {}
+        for identifier, zone in pairs(nsz.zonetypes) do 
+            if istable(zone.settings) then 
+                rawZoneSettings[identifier] = zone.settings
+            end
+        end
+        net.WriteTable(rawZoneSettings)
+    end
+    net.Send(ply)
+end)
+
 -- Allow the weapon to be used (ULX support)
 if ULib ~= nil then
     ULib.ucl.registerAccess("Create Zones", "superadmin", "Users with this permission can create and delete zones.", "Nub's Safe Zones")
@@ -89,43 +127,43 @@ net.Receive("nsz_upload", function(len, ply)
     end
 
     if not can then
-        ply:ChatPrint("NSZ Error: You don't have permission to create zones.")
+        nsz.SendLocalizedMessage(ply, "error.nopermission.managezones")
         return
     end
 
     if not isstring(zone.identifier) then -- They didn't send a string for the zone type
-        ply:ChatPrint("NSZ Error: You need a type of zone.")
+        nsz.SendLocalizedMessage(ply, "error.invalidzonetype")
         return
     end
 
     if not istable(zone.points) then -- They didn't send valid corners for the zone
-        ply:ChatPrint("NSZ Error: You need two positions for a zone.")
+        nsz.SendLocalizedMessage(ply, "error.invalidpositions")
         return
     end
 
     -- The corners of the zone aren't Vectors
     if not isvector(zone.points[1]) or not isvector(zone.points[2]) then
-        ply:ChatPrint("NSZ Error: You need two positions for a zone.")
+        nsz.SendLocalizedMessage(ply, "error.invalidpositions")
         return
     end
 
 
     -- Corners are used for detection, points are used for rendering
     zone.corners = {}
-    local c = (zone.points[1] + zone.points[2]) / 2
-    local s = (zone.points[2] - zone.points[1]) / 2
+    local center = (zone.points[1] + zone.points[2]) / 2
+    local size   = (zone.points[2] - zone.points[1]) / 2
 
-    table.insert(zone.corners, Vector(c[1] + s[1], c[2] + s[2], c[3] + s[3]))
-    table.insert(zone.corners, Vector(c[1] - s[1], c[2] + s[2], c[3] + s[3]))
-    table.insert(zone.corners, Vector(c[1] + s[1], c[2] - s[2], c[3] + s[3]))
-    table.insert(zone.corners, Vector(c[1] - s[1], c[2] - s[2], c[3] + s[3]))
-    table.insert(zone.corners, Vector(c[1] + s[1], c[2] + s[2], c[3] - s[3]))
-    table.insert(zone.corners, Vector(c[1] - s[1], c[2] + s[2], c[3] - s[3]))
-    table.insert(zone.corners, Vector(c[1] + s[1], c[2] - s[2], c[3] - s[3]))
-    table.insert(zone.corners, Vector(c[1] - s[1], c[2] - s[2], c[3] - s[3]))
+    table.insert(zone.corners, Vector(center[1] + size[1], center[2] + size[2], center[3] + size[3]))
+    table.insert(zone.corners, Vector(center[1] - size[1], center[2] + size[2], center[3] + size[3]))
+    table.insert(zone.corners, Vector(center[1] + size[1], center[2] - size[2], center[3] + size[3]))
+    table.insert(zone.corners, Vector(center[1] - size[1], center[2] - size[2], center[3] + size[3]))
+    table.insert(zone.corners, Vector(center[1] + size[1], center[2] + size[2], center[3] - size[3]))
+    table.insert(zone.corners, Vector(center[1] - size[1], center[2] + size[2], center[3] - size[3]))
+    table.insert(zone.corners, Vector(center[1] + size[1], center[2] - size[2], center[3] - size[3]))
+    table.insert(zone.corners, Vector(center[1] - size[1], center[2] - size[2], center[3] - size[3]))
 
     table.insert(nsz.zones, zone)
-    ply:ChatPrint("NSZ: Success!")
+    nsz.SendLocalizedMessage(ply, "tool.success")
     nsz:SendZones()
     nsz:SaveZones()
 end)

@@ -29,7 +29,6 @@ net.Receive("nsz_delete", function(len, ply)
         nsz:SaveZones()
 
         ply:ChatPrint("NSZ: Removed " .. deleted .. " zones.")
-        return
     else
         local zone = tonumber(args[1])
         if isnumber(zone) then
@@ -55,6 +54,28 @@ net.Receive("nsz_delete", function(len, ply)
 
             ply:ChatPrint("NSZ: Removed " .. deleted .. " " .. typ .. " zones.")
         end
+    end
+
+    if #nsz.zones == 0 then 
+        for player, zones in pairs(nsz.truePlayerCache) do 
+            for zoneIdentifier, _ in pairs(zones) do 
+                player:SetNWBool("nsz_in_zone_" .. zoneIdentifier, false)
+                hook.Run("NSZExit", zoneIdentifier, player, false)
+            end
+        end
+        nsz.playerCache = {}
+        nsz.truePlayerCache = {}
+
+        for entityIndex, zones in pairs(nsz.trueEntityCache) do 
+            local entity = ents.GetByIndex(entityIndex)
+            if IsValid(entity) then 
+                for zoneIdentifier, _ in pairs(zones) do 
+                    hook.Run("NSZExit", zoneIdentifier, entity, false)
+                end
+            end
+        end
+        nsz.entityCache = {}
+        nsz.trueEntityCache = {}
     end
 end)
 

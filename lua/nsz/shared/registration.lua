@@ -22,13 +22,15 @@ function nsz:RegisterZone(identifier, title, subtitle, icon, color)
             if not istable(nsz.zoneSettings[zone.identifier]) then nsz.zoneSettings[zone.identifier] = {} end
             local actualSetting = nsz.zoneSettings[zone.identifier]
 
-            for ID, setting in pairs(zone.settings) do 
+            for index, setting in ipairs(zone.settings) do 
+                local ID = setting.identifier
+                if not isstring(ID) then continue end
                 if actualSetting[ID] ~= nil then continue end -- This code is just supposed to assign a default value if it doesn't already have data
                 
                 if setting.defaultValue ~= nil then 
                     actualSetting[ID] = setting.defaultValue
-                else 
-                    if not isnumber(setting.typeOfSetting) then error("Bad setting \"" .. ID .. "\": Expected a number, got " .. type(setting.typeOfSetting)) end
+                elseif not setting.allowNil then  
+                    if not isnumber(setting.typeOfSetting) then error("Bad setting type for \"" .. ID .. "\": Expected a number, got " .. type(setting.typeOfSetting)) end
                     if setting.typeOfSetting == nsz.settingTypes.BOOL then 
                         actualSetting[ID] = false
                     elseif setting.typeOfSetting == nsz.settingTypes.FLOAT or setting.typeOfSetting == nsz.settingTypes.INT or setting.typeOfSetting == nsz.settingTypes.SLIDER then 
@@ -37,7 +39,7 @@ function nsz:RegisterZone(identifier, title, subtitle, icon, color)
                             actualSetting[ID] = (setting.minimumValue + maximumValue) / 2
                             if setting.typeOfSetting == nsz.settingTypes.INT then actualSetting[ID] = math.Round(actualSetting[ID]) end
                         elseif minimum then actualSetting[ID] = setting.minimumValue
-                        elseif maximum then actualSetting[ID] = maximumValue
+                        elseif maximum then actualSetting[ID] = setting.maximumValue
                         else actualSetting[ID] = 0 end
                     elseif setting.typeOfSetting == nsz.settingTypes.STRING then 
                         actualSetting[ID] = ""
@@ -74,25 +76,22 @@ function nsz:RegisterZone(identifier, title, subtitle, icon, color)
     end
 end
 
-if CLIENT then 
-    nsz.zoneSettings = nsz.zoneSettings or {}
-end
-
 nsz.settingTypes = {
-    BOOL = 1, 
-    FLOAT = 2,
-    INT = 3,
-    STRING = 4,
-    SLIDER = 5,
-    HEADER = 6,
-    SUBTITLE = 7,
-    LABEL = 8,
-    DIVIDER = 9,
-    COMBO = 10,
-    COLOR = 11,
-    VECTOR = 12,
-    ANGLE = 13,
-    MUTLIPLECHOICE = 14
+    BOOL           =  1, CHECKBOX = 1,
+    FLOAT          =  2, NUMBER   = 2,
+    INT            =  3,
+    STRING         =  4, TEXT     = 4,
+    SLIDER         =  5,
+    HEADER         =  6,
+    SUBTITLE       =  7,
+    LABEL          =  8,
+    DIVIDER        =  9,
+    COMBO          = 10,
+    COLOR          = 11,
+    VECTOR         = 12,
+    ANGLE          = 13,
+    MUTLIPLECHOICE = 14,
+    MATSELECT      = 15 -- Material List, aka browser of ingame materials
 }
 
 -- Used in the event that a previously registered zone is no longer registered

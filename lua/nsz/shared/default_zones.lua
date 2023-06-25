@@ -1,12 +1,10 @@
--- nsz:RegisterZone("Safe Zone", "You are protected from all harm", "safe", "materials/nsz/nsz.png", Color(62, 255, 62))
--- nsz:RegisterZone("Spawn Zone", "No building or killing here", "spawn", "materials/nsz/nsz.png", Color(255, 255, 62))
--- nsz:RegisterZone("No Build Zone", "You cannot build here", "nobuild", "materials/nsz/no_build_zone.png", Color(255, 62, 62))
 nsz:RegisterZone({
     identifier = "safe",
     icon = "materials/nsz/nsz.png",
     color = Color(62, 255, 62),
     settings = {
-        protectWithGod = {
+        {
+            identifier = "protectWithGod",
             typeOfSetting = nsz.settingTypes.BOOL,
             defaultValue = false
         }
@@ -17,11 +15,13 @@ nsz:RegisterZone({
     icon = "materials/nsz/nsz.png",
     color = Color(255, 255, 62),
     settings = {
-        protectWithGod = {
+        {
+            identifier = "protectWithGod",
             typeOfSetting = nsz.settingTypes.BOOL,
             defaultValue = false
         }, 
-        allowReentry = {
+        {
+            identifier = "allowReentry",
             typeOfSetting = nsz.settingTypes.BOOL,
             defaultValue = true
         }
@@ -30,24 +30,76 @@ nsz:RegisterZone({
 nsz:RegisterZone({
     identifier = "nobuild",
     icon = "materials/nsz/no_build_zone.png",
-    color = Color(255, 62, 62)
+    color = Color(255, 62, 62),
+    settings = {
+        {
+            identifier = "shouldSetMaterial",
+            typeOfSetting = nsz.settingTypes.BOOL,
+            defaultValue = false
+        },
+        {
+            identifier = "material",
+            typeOfSetting = nsz.settingTypes.MATSELECT
+        },
+        {
+            typeOfSetting = nsz.settingTypes.DIVIDER
+        },
+        {
+            identifier = "shouldSetColor",
+            typeOfSetting = nsz.settingTypes.BOOL,
+            defaultValue = false
+        },
+        {
+            identifier = "color",
+            typeOfSetting = nsz.settingTypes.COLOR,
+            defaultValue = Color(255, 255, 255)
+        }
+    }
+})
+
+nsz:RegisterZone({
+    identifier = "healing",
+    icon = "materials/nsz/nsz.png",
+    color = Color(62, 96, 255),
+    settings = {
+        {
+            identifier = "healingAmount",
+            typeOfSetting = nsz.settingTypes.SLIDER,
+            defaultValue = 2,
+            decimals = 0,
+            minimumValue = 1, maximumValue = 100
+        },
+        {
+            identifier = "healingRate",
+            typeOfSetting = nsz.settingTypes.FLOAT,
+            defaultValue = 3
+        }
+    }
 })
 
 if CLIENT then 
-    language.Add("nsz.zones.safe.title.English", "Safe Zone")
-    language.Add("nsz.zones.safe.subtitle.English", "You are protected from all harm.")
-    language.Add("nsz.zones.safe.protectWithGod.label.English", "Protect players with god mode")
-    language.Add("nsz.zones.safe.protectWithGod.help.English", "Enables godmode in safe zones. No damage can be taken whatsoever. If disabled, damage is reduced to 0 from others while allowing them to hurt themselves (i. e. jumping off a ledge).")
+    nsz.language.SetActiveLanguage("English")
+    nsz.language.Add("zones.safe.title",                         "Safe Zone")
+    nsz.language.Add("zones.safe.subtitle",                      "You are protected from all harm.")
+    nsz.language.Add("zones.safe.settings.protectWithGod.label", "Protect players with god mode")
+    nsz.language.Add("zones.safe.settings.protectWithGod.help",  "Enables godmode in safe zones. No damage can be taken whatsoever. If disabled, damage is reduced to 0 from others while allowing them to hurt themselves (i. e. jumping off a ledge). This will conflict with god commands.")
     
-    language.Add("nsz.zones.spawn.title.English", "Spawn Zone")
-    language.Add("nsz.zones.spawn.subtitle.English", "No building or killing here.")
-    language.Add("nsz.zones.spawn.protectWithGod.label.English", "Protect players with god mode")
-    language.Add("nsz.zones.spawn.protectWithGod.help.English", "Enables godmode in spawn zones. No damage can be taken whatsoever. If disabled, damage is reduced to 0 from others while allowing them to hurt themselves (i. e. jumping off a ledge).")
-    language.Add("nsz.zones.spawn.allowReentry.label.English", "Allow re-entry after exiting") 
-    language.Add("nsz.zones.spawn.allowReentry.help.English", "Only allows the player to enter the zone once until they die") 
+    nsz.language.Add("zones.spawn.title",                         "Spawn Zone")
+    nsz.language.Add("zones.spawn.subtitle",                      "No building or killing here.")
+    nsz.language.Add("zones.spawn.settings.protectWithGod.label", "Protect players with god mode")
+    nsz.language.Add("zones.spawn.settings.protectWithGod.help",  "Enables godmode in spawn zones. No damage can be taken whatsoever. If disabled, damage is reduced to 0 from others while allowing them to hurt themselves (i. e. jumping off a ledge). This will conflict with god commands.")
+    nsz.language.Add("zones.spawn.settings.allowReentry.label",   "Allow re-entry after exiting") 
+    nsz.language.Add("zones.spawn.settings.allowReentry.help",    "Only allows the player to enter the zone once until they die") 
 
-    language.Add("nsz.zones.nobuild.title.English", "No Build Zone")
-    language.Add("nsz.zones.nobuild.subtitle.English", "No building here.")
+    nsz.language.Add("zones.nobuild.title",                            "No Build Zone")
+    nsz.language.Add("zones.nobuild.subtitle",                         "No building here.")
+    nsz.language.Add("zones.nobuild.settings.shouldSetMaterial.label", "Should the entity's material be changed?")
+    nsz.language.Add("zones.nobuild.settings.setMaterial.label",       "Material to be applied:")
+    nsz.language.Add("zones.nobuild.settings.shouldSetColor.label",    "Should the entity's color be changed?")
+    nsz.language.Add("zones.nobuild.settings.setColor.label",          "Color to be applied:")
+
+    nsz.language.Add("zones.healing.title",    "Health Zone")
+    nsz.language.Add("zones.healing.subtitle", "You regenerate health here.")
 end
 
 if SERVER then 
@@ -74,7 +126,13 @@ if SERVER then
             local owner = nsz:GetEntityOwner(entity)
             if not IsValid(owner) then return end
 
-            if ULib == nil then if owner:IsAdmin() then return true else return end end
+            if ULib == nil then 
+                if owner:IsAdmin() then 
+                    return true 
+                else 
+                    return 
+                end 
+            end
             
             if inSpawn and ULib.ucl.query(owner, "Spawn Zone - Allow Building") then return true end
             if ULib.ucl.query(owner, "No Build Zone - Allow Building") then return true end

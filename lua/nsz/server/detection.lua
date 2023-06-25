@@ -20,9 +20,10 @@ local scans = 0
 local usedVector = 0
 local usedAABB = 0
 local usedSAT = 0
+local ticks = 0
 util.AddNetworkString("nsz_prop_check") -- Used in the client cvar "nsz_show_zones", debug of the time it took to scan entities
 
-timer.Create("nsz_check_times", 0.5, 0, function()
+timer.Create("nsz_check_times", 0.1, 0, function()
     -- Find the average time it took to scan
     local av = 0
     for i, t in ipairs(times) do
@@ -37,6 +38,7 @@ timer.Create("nsz_check_times", 0.5, 0, function()
         net.WriteUInt(usedVector, 16)
         net.WriteUInt(usedAABB, 16)
         net.WriteUInt(usedSAT, 16)
+        net.WriteUInt(ticks, 8)
     net.Broadcast()
 
     -- Reset the times and scans count
@@ -46,6 +48,7 @@ timer.Create("nsz_check_times", 0.5, 0, function()
     usedVector = 0
     usedAABB = 0
     usedSAT = 0
+    ticks = 0
 end)
 
 -- This function returns what zones something is located in
@@ -243,15 +246,17 @@ hook.Add("PlayerSpawnedVehicle", "nsz_apply_owner", function(ply, ent)
     assignEnt(ent, ply)
 end)
 
-local index = 0
-local entities
-
 -- Difference between both caches is one is always true if in the zone, 
 -- the other can kick the player out and not fire NSZEnter again until they leave.
 nsz.playerCache = nsz.playerCache or {}
 nsz.truePlayerCache = nsz.truePlayerCache or {}
 nsz.entityCache = nsz.entityCache or {}
 nsz.trueEntityCache = nsz.trueEntityCache or {}
+
+-- Used for entity checking
+local index = 0 
+local entities
+local numEntities = 0
 
 hook.Add("Think", "nsz_check", function()
     -- We don't want to loop anything if there are no zones
@@ -306,11 +311,21 @@ hook.Add("Think", "nsz_check", function()
     -- Entity zone detection
     local ind = 0
     local maxInd = GetConVar("nsz_prop_checks_per_tick"):GetInt()
+    local loopedOver = false
+    local startIndex = index
 
-    if not istable(entities) then entities = ents.GetAll() end
+    if not istable(entities) then 
+        entities = ents.GetAll() 
+        numEntities = #entities
+    end
 
-    if index >= #entities then index = 0 entities = ents.GetAll() end
-    while index < #entities and ind < maxInd do
+    if index >= numEntities then 
+        index = 0 
+        entities = ents.GetAll() 
+        numEntities = #entities
+    end
+
+    while index < numEntities and ind < maxInd and not (loopedOver and index > startIndex) do
         ind = ind + 1
         index = index + 1
         scans = scans + 1
@@ -374,7 +389,6 @@ hook.Add("Think", "nsz_check", function()
                         nsz.trueEntityCache[entityIndex][info.identifier] = true
                     elseif not table.HasValue(zones, info.identifier) and nsz.entityCache[entityIndex][info.identifier] then
                         hook.Run("NSZExit", info.identifier, ent, false)
-                        hook.Run("EntityZoneLeave", ent, info.identifier)
 
                         nsz.entityCache[entityIndex][info.identifier] = nil
                         nsz.trueEntityCache[entityIndex][info.identifier] = nil
@@ -385,14 +399,17 @@ hook.Add("Think", "nsz_check", function()
             end
         end
 
-        if index >= #entities then
+        if index >= numEntities then
             index = 0
             entities = ents.GetAll()
+            numEntities = #entities
+            loopedOver = true
         end
     end
 
     local fin = SysTime()
     table.insert(times, fin - start)
+    ticks = ticks + 1
 
     -- Loop through the player cache and run associated hooks
     local zones = {}
